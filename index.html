@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的视频库</title>
+    <style>
+        body { font-family: sans-serif; background: #f4f4f7; margin: 0; padding: 20px; }
+        .header { text-align: center; padding: 20px 0; }
+        .video-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); 
+            gap: 20px; max-width: 1200px; margin: 0 auto; 
+        }
+        .video-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        video { width: 100%; aspect-ratio: 16/9; background: #000; display: block; }
+        .info { padding: 15px; }
+        .info h3 { margin: 0; font-size: 1.1rem; color: #333; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>产品展示视频墙</h1>
+    <p>点击下方视频即可预览</p>
+</div>
+
+<div class="video-grid" id="videoGrid">
+    </div>
+
+<script>
+    // 【关键：在这里添加你的视频链接】
+    const videos = [
+        { title: "01-汽车分类与结构认知", url: "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/01-%E6%B1%BD%E8%BD%A6%E5%88%86%E7%B1%BB%E4%B8%8E%E7%BB%93%E6%9E%84%E8%AE%A4%E7%9F%A5.mp4" },
+        // 以后有新视频，只需复制上面那行，改一下标题和URL即可
+    ];
+
+    const grid = document.getElementById('videoGrid');
+    videos.forEach(v => {
+        grid.innerHTML += `
+            <div class="video-card">
+                <video controls playsinline preload="metadata">
+                    <source src="${v.url}" type="video/mp4">
+                </video>
+                <div class="info"><h3>${v.title}</h3></div>
+            </div>`;
+    });
+</script>
+
+</body>
+</html>
