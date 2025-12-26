@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>汽车技术教学视频库 - 最新版</title>
+    <title>汽车技术教学视频库 - 顺序版</title>
     <style>
         body { font-family: -apple-system, sans-serif; background: #f4f7f9; margin: 0; padding: 0; color: #333; }
         .sticky-header { position: sticky; top: 0; background: #fff; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.1); padding: 15px; text-align: center; }
@@ -22,17 +22,24 @@
 
 <div class="sticky-header">
     <h2 style="margin:0;">汽车技术教学视频库</h2>
-    <input type="text" class="search-box" id="searchInput" placeholder="🔍 搜索最新教学视频...">
-    <div class="stats">当前显示最新视频：<span id="totalCount">0</span> 个</div>
+    <input type="text" class="search-box" id="searchInput" placeholder="🔍 按数字或关键词搜索视频...">
+    <div class="stats">共计 <span id="totalCount">0</span> 个视频（已按序号排序）</div>
 </div>
 
 <div class="video-grid" id="videoGrid"></div>
 
 <script>
-    // 仅包含您最新上传的 csv 文件中的 20 条链接
-    const newVideoUrls = [
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/01-%E6%B1%BD%E8%BD%A6%E5%88%86%E7%B1%BB%E4%B8%8E%E7%BB%93%E6%9E%84%E8%AE%A4%E7%9F%A5.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/02-%E6%B1%BD%E8%BD%A6%E8%AF%86%E5%88%AB%E4%BB%A3%E7%A0%81%E5%92%8C%E6%8A%80%E6%9C%AF%E5%8F%82%E6%95%B0%E8%AE%A4%E7%9F%A5.mp4",
+    // 包含您 export_urls.csv 中的所有 20 条链接
+    const rawData = [
+        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/1-%E6%B1%BD%E8%BD%A6%E5%88%86%E7%B1%BB%E4%B8%8E%E7%BB%93%E6%9E%84%E8%AE%A4%E7%9F%A5.mp4",
+        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/2-%E6%B1%BD%E8%BD%A6%E8%AF%86%E5%88%AB%E4%BB%A3%E7%A0%81%E5%92%8C%E6%8A%80%E6%9C%AF%E5%8F%82%E6%95%B0%E8%AE%A4%E7%9F%A5.mp4",
+        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/3.%E5%8F%91%E5%8A%A8%E6%9C%BA%E7%9A%84%E6%80%BB%E4%BD%93%E7%BB%93%E6%9E%84%E5%92%8C%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86%E8%AE%A4%E7%9F%A5.mp4",
+        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/4.%E6%9C%BA%E4%BD%93%E7%BB%84%E5%8F%8A%E6%B4%BB%E5%A1%9E%E8%BF%9E%E6%9D%86%E7%BB%84%E8%AE%A4%E7%9F%A5.mp4",
+        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/5.%E6%9C%BA%E4%BD%93%E7%BB%84%E4%B8%8E%E6%B4%BB%E5%A1%9E%E8%BF%9E%E6%9D%86%E7%BB%84%E6%8B%86%E5%8D%B8%E6%A3%80%E4%BF%AE.mp4",
+        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/6.%E6%9B%B2%E8%BD%B4%E9%A3%9E%E8%BD%AE%E7%BB%84%E8%AE%A4%E7%9F%A5.mp4",
+        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/7.%E6%9B%B2%E8%BD%B4%E9%A3%9E%E8%BD%AE%E7%BB%84%E6%8B%86%E8%A3%85%E6%A3%80%E4%BF%AE.mp4",
+        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/8.%E9%85%8D%E6%B0%94%E6%9C%BA%E6%9E%84%E7%9A%84%E4%B8%BB%E8%A6%81%E9%83%A8%E4%BB%B6%E8%AE%A4%E7%9F%A5.mp4",
+        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/9.%E9%85%8D%E6%B0%94%E6%9C%BA%E6%9E%84%E6%8B%86%E8%A3%85%E6%A3%80%E4%BF%AE.mp4",
         "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/10.%E7%87%83%E6%B2%B9%E4%BE%9B%E7%BB%99%E7%B3%BB%E7%BB%9F%E8%AE%A4%E7%9F%A5.mp4",
         "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/11.%E7%87%83%E6%B2%B9%E4%BE%9B%E7%BB%99%E7%B3%BB%E7%BB%9F%E6%8B%86%E8%A3%85%E6%A3%80%E4%BF%AE.mp4",
         "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/12.%E6%B6%A6%E6%BB%91%E7%B3%BB%E4%B8%BB%E8%A6%81%E9%83%A8%E4%BB%B6%E8%AE%A4%E7%9F%A5.mp4",
@@ -43,44 +50,47 @@
         "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/17.%E7%82%B9%E7%81%AB%E7%B3%BB%E7%BB%9F%E6%8B%86%E8%A3%85%E6%A3%80%E4%BF%AE.mp4",
         "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/18.%E8%B5%B7%E5%8A%A8%E7%B3%BB%E7%9A%84%E4%B8%BB%E8%A6%81%E9%83%A8%E4%BB%B6%E8%AE%A4%E7%9F%A5.mp4",
         "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/19.%E5%90%AF%E5%8A%A8%E7%B3%BB%E7%BB%9F%E6%8B%86%E8%A3%85%E6%A3%80%E4%BF%AE.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/20.%E4%BC%A0%E5%8A%A8%E7%B3%BB%E7%BB%9F%E5%8F%8A%E5%B8%83%E7%BD%AE%E5%BD%A2%E5%BC%8F%E8%AE%A4%E7%9F%A5.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/3.%E5%8F%91%E5%8A%A8%E6%9C%BA%E7%9A%84%E6%80%BB%E4%BD%93%E7%BB%93%E6%9E%84%E5%92%8C%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86%E8%AE%A4%E7%9F%A5.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/4.%E6%9C%BA%E4%BD%93%E7%BB%84%E5%8F%8A%E6%B4%BB%E5%A1%9E%E8%BF%9E%E6%9D%86%E7%BB%84%E8%AE%A4%E7%9F%A5.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/5.%E6%9C%BA%E4%BD%93%E7%BB%84%E4%B8%8E%E6%B4%BB%E5%A1%9E%E8%BF%9E%E6%9D%86%E7%BB%84%E6%8B%86%E5%8D%B8%E6%A3%80%E4%BF%AE.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/6.%E6%9B%B2%E8%BD%B4%E9%A3%9E%E8%BD%AE%E7%BB%84%E8%AE%A4%E7%9F%A5.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/7.%E6%9B%B2%E8%BD%B4%E9%A3%9E%E8%BD%AE%E7%BB%84%E6%8B%86%E8%A3%85%E6%A3%80%E4%BF%AE.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/8.%E9%85%8D%E6%B0%94%E6%9C%BA%E6%9E%84%E7%9A%84%E4%B8%BB%E8%A6%81%E9%83%A8%E4%BB%B6%E8%AE%A4%E7%9F%A5.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/9.%E9%85%8D%E6%B0%94%E6%9C%BA%E6%9E%84%E6%8B%86%E8%A3%85%E6%A3%80%E4%BF%AE.mp4"
+        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/20.%E4%BC%A0%E5%8A%A8%E7%B3%BB%E7%BB%9F%E5%8F%8A%E5%B8%83%E7%BD%AE%E5%BD%A2%E5%BC%8F%E8%AE%A4%E7%9F%A5.mp4"
     ];
 
     const grid = document.getElementById('videoGrid');
     const searchInput = document.getElementById('searchInput');
-    const totalCountSpan = document.getElementById('totalCount');
+    const stats = document.getElementById('totalCount');
 
-    function renderVideos(filter = '') {
-        grid.innerHTML = '';
-        const filtered = newVideoUrls.filter(url => {
-            const title = decodeURIComponent(url.split('/').pop().replace('.mp4', ''));
-            return title.toLowerCase().includes(filter.toLowerCase());
-        });
-
-        filtered.forEach(url => {
-            const title = decodeURIComponent(url.split('/').pop().replace('.mp4', ''));
-            const card = document.createElement('div');
-            card.className = 'video-card';
-            card.innerHTML = `
-                <video controls playsinline preload="metadata">
-                    <source src="${url}" type="video/mp4">
-                </video>
-                <div class="info"><h3>${title}</h3></div>
-            `;
-            grid.appendChild(card);
-        });
-        totalCountSpan.innerText = filtered.length;
+    // 处理数据并排序
+    function processAndSort(data) {
+        return data.map(url => {
+            const fileName = decodeURIComponent(url.split('/').pop().replace('.mp4', ''));
+            // 提取开头的数字作为排序依据
+            const match = fileName.match(/^(\d+)/);
+            const order = match ? parseInt(match[1]) : 999;
+            return { title: fileName, url: url, order: order };
+        }).sort((a, b) => a.order - b.order); // 按数字从小到大排序
     }
 
-    searchInput.addEventListener('input', (e) => renderVideos(e.target.value));
-    renderVideos();
+    const sortedVideos = processAndSort(rawData);
+
+    function display(filter = '') {
+        grid.innerHTML = '';
+        let count = 0;
+        sortedVideos.forEach(v => {
+            if (v.title.toLowerCase().includes(filter.toLowerCase())) {
+                count++;
+                const card = `
+                    <div class="video-card">
+                        <video controls playsinline preload="metadata">
+                            <source src="${v.url}" type="video/mp4">
+                        </video>
+                        <div class="info"><h3>${v.title}</h3></div>
+                    </div>`;
+                grid.innerHTML += card;
+            }
+        });
+        stats.innerText = count;
+    }
+
+    searchInput.addEventListener('input', (e) => display(e.target.value));
+    display();
 </script>
 
 </body>
