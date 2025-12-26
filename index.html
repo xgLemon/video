@@ -3,47 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>凌泰教育视频库</title>
+    <title>汽车技术视频库</title>
     <style>
-        body { font-family: sans-serif; background: #f4f4f7; margin: 0; padding: 20px; }
-        .header { text-align: center; padding: 20px 0; }
+        body { font-family: -apple-system, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
+        .header { text-align: center; padding: 30px 0; background: #fff; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
         .video-grid { 
             display: grid; 
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); 
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
             gap: 20px; max-width: 1200px; margin: 0 auto; 
         }
-        .video-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .video-card { background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.08); transition: transform 0.2s; }
+        .video-card:hover { transform: translateY(-5px); }
         video { width: 100%; aspect-ratio: 16/9; background: #000; display: block; }
-        .info { padding: 15px; }
-        .info h3 { margin: 0; font-size: 1.1rem; color: #333; }
+        .info { padding: 12px; border-top: 1px solid #eee; }
+        .info h3 { margin: 0; font-size: 0.95rem; color: #333; line-height: 1.4; word-break: break-all; }
+        /* 手机端适配 */
+        @media (max-width: 600px) {
+            .video-grid { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
 
 <div class="header">
-    <h1>课程视频墙</h1>
-    <p>点击下方视频即可预览</p>
+    <h1>汽车技术教学视频库</h1>
+    <p>当前共有 <span id="videoCount">0</span> 个演示视频</p>
 </div>
 
-<div class="video-grid" id="videoGrid">
-    </div>
+<div class="video-grid" id="videoGrid"></div>
 
 <script>
-    // 【关键：在这里添加你的视频链接】
-    const videos = [
-        { title: "01-汽车分类与结构认知", url: "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/01-%E6%B1%BD%E8%BD%A6%E5%88%86%E7%B1%BB%E4%B8%8E%E7%BB%93%E6%9E%84%E8%AE%A4%E7%9F%A5.mp4" },
-        // 以后有新视频，只需复制上面那行，改一下标题和URL即可
+    // 这里放你上传的 CSV 文件里的所有链接
+    const videoUrls = [
+        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/01-%E6%B1%BD%E8%BD%A6%E5%88%86%E7%B1%BB%E4%B8%8E%E7%BB%93%E6%9E%84%E8%AE%A4%E7%9F%A5.mp4",
+        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/02-%E5%86%85%E7%87%83%E6%9C%BA%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86.mp4",
+        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/03-%E5%8F%91%E5%8A%A8%E6%9C%BA%E6%80%BB%E4%BD%93%E7%BB%93%E6%9E%84.mp4",
+        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/04-%E6%9B%B2%E6%9F%84%E8%BF%9E%E6%9D%86%E6%9C%BA%E6%9E%84.mp4",
+        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/05-%E9%85%8D%E6%B0%94%E6%9C%BA%E6%9E%84.mp4",
+        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/06-%E6%B1%BD%E6%B2%B9%E6%9C%BA%E7%87%83%E6%B2%B9%E4%BE%9B%E7%BB%93%E7%B3%BB%E7%BB%9F.mp4",
+        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/07-%E6%9F%B4%E6%B2%B9%E6%9C%BA%E7%87%83%E6%B2%B9%E4%BE%9B%E7%BB%93%E7%B3%BB%E7%BB%9F.mp4",
+        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/08-%E5%8F%91%E5%8A%A8%E6%9C%BA%E5%86%B7%E5%8D%B4%E7%B3%BB.mp4",
+        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/09-%E5%8F%91%E5%8A%A8%E6%9C%BA%E6%B6%A6%E6%BB%91%E7%B3%BB.mp4",
+        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/10-%E5%8F%91%E5%8A%A8%E6%9C%BA%E7%82%B9%E7%81%AB%E7%B3%BB.mp4",
+        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/11-%E5%8F%91%E5%8A%A8%E6%9C%BA%E8%B5%B7%E5%8A%A8%E7%B3%BB.mp4",
+        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/12-%E6%B1%BD%E8%BD%A6%E4%BC%A0%E5%8A%A8%E7%B3%BB%E6%A6%82%E8%BF%B0.mp4",
+        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/13-%E7%A6%BB%E5%90%88%E5%99%A8.mp4",
+        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/14-%E6%89%8B%E5%8A%A8%E5%8F%98%E9%80%9F%E5%99%A8.mp4",
+        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/15-%E8%87%AA%E5%8A%A8%E5%8F%98%E9%80%9F%E5%99%A8.mp4"
     ];
 
     const grid = document.getElementById('videoGrid');
-    videos.forEach(v => {
-        grid.innerHTML += `
+    document.getElementById('videoCount').innerText = videoUrls.length;
+
+    videoUrls.forEach(url => {
+        // 自动从链接中提取文件名作为标题
+        let title = decodeURIComponent(url.split('/').pop().replace('.mp4', ''));
+        
+        const card = `
             <div class="video-card">
                 <video controls playsinline preload="metadata">
-                    <source src="${v.url}" type="video/mp4">
+                    <source src="${url}" type="video/mp4">
                 </video>
-                <div class="info"><h3>${v.title}</h3></div>
+                <div class="info">
+                    <h3>${title}</h3>
+                </div>
             </div>`;
+        grid.innerHTML += card;
     });
 </script>
 
