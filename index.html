@@ -5,70 +5,103 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>凌泰教育教学资源库</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background: #f4f7f9; margin: 0; padding: 0; color: #333; -webkit-user-select: none; user-select: none; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #f4f7f9; margin: 0; padding: 0; color: #333; -webkit-user-select: none; user-select: none; overflow-x: hidden; }
         
-        /* 顶部导航栏 */
-        .sticky-header { position: sticky; top: 0; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.05); padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; }
-        .site-title { font-size: 1.2rem; font-weight: bold; color: #333; margin: 0; }
-        .search-box { padding: 8px 15px; border: 1px solid #ddd; border-radius: 20px; outline: none; font-size: 14px; width: 200px; transition: all 0.3s; }
-        .search-box:focus { border-color: #007aff; width: 300px; }
+        /* 顶部导航 */
+        .header { background: #fff; padding: 15px 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; }
+        .back-btn { display: none; padding: 8px 16px; background: #f0f0f0; border: none; border-radius: 20px; cursor: pointer; font-size: 14px; color: #333; font-weight: bold; }
+        .back-btn:hover { background: #e0e0e0; }
+        .site-title { font-size: 1.2rem; font-weight: 800; color: #2c3e50; margin: 0; }
+        
+        /* 容器 */
+        .container { max-width: 1200px; margin: 20px auto; padding: 0 20px; }
 
-        /* 板块标题风格 */
-        .project-section { max-width: 1400px; margin: 40px auto 10px; padding: 0 20px; display: flex; align-items: center; }
-        .project-title { font-size: 1.6rem; font-weight: 800; color: #2c3e50; margin-right: 15px; }
-        .project-badge { background: #007aff; color: #fff; font-size: 0.8rem; padding: 3px 8px; border-radius: 4px; font-weight: normal; }
-        .project-line { flex-grow: 1; height: 1px; background: #e0e0e0; margin-left: 15px; }
+        /* 📁 首页文件夹视图 */
+        .folder-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; padding-top: 20px; }
+        .folder-card { background: #fff; border-radius: 16px; padding: 30px; text-align: center; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border: 2px solid transparent; }
+        .folder-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.08); border-color: #007aff; }
+        .folder-icon { font-size: 4rem; margin-bottom: 15px; display: block; }
+        .folder-name { font-size: 1.2rem; font-weight: bold; color: #333; }
+        .folder-count { font-size: 0.9rem; color: #999; margin-top: 5px; }
 
-        /* 资源网格布局 */
-        .resource-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; padding: 10px 20px 40px; max-width: 1400px; margin: 0 auto; }
+        /* 📄 文件列表视图 (默认隐藏) */
+        .file-grid { display: none; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
         
-        /* 卡片样式 */
-        .card { background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.04); transition: transform 0.2s; border: 1px solid #f0f0f0; }
-        .card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        /* 资源卡片 */
+        .card { background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05); transition: transform 0.2s; }
+        .card:hover { transform: translateY(-3px); }
         
-        /* 媒体容器 */
+        /* 媒体区域 */
         .media-wrapper { width: 100%; aspect-ratio: 16/9; background: #f8f9fa; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; }
         
-        /* 安全遮罩层 (核心防盗) */
-        .security-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; background: rgba(0,0,0,0); }
-        .video-mask { height: 85%; } /* 视频只遮上面，留出控制条 */
-
-        /* 各类媒体样式 */
-        video { width: 100%; height: 100%; object-fit: contain; background: #000; display: block; }
-        /* 图片禁止鼠标事件和拖拽 */
+        /* 视频：移除遮罩，直接裸奔但禁右键 */
+        video { width: 100%; height: 100%; object-fit: contain; background: #000; outline: none; }
+        
+        /* 图片：继续防盗 */
         .safe-img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
-        iframe.doc-viewer { width: 100%; height: 100%; border: none; }
+        .security-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; }
 
-        /* 底部信息栏 */
-        .info { padding: 12px; border-top: 1px solid #eee; position: relative; z-index: 20; background: #fff; }
+        /* PPT 封面模式 */
+        .ppt-cover { text-align: center; width: 100%; cursor: pointer; }
+        .ppt-icon { font-size: 3rem; color: #ff6b6b; margin-bottom: 10px; }
+        .ppt-hint { color: #007aff; font-size: 0.9rem; font-weight: bold; }
+
+        /* 底部信息 */
+        .info { padding: 12px; border-top: 1px solid #eee; background: #fff; }
         .info h3 { margin: 0; font-size: 0.9rem; color: #444; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-        /* 文件类型标签 */
-        .file-tag { font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; color: #fff; margin-right: 5px; vertical-align: middle; display: inline-block; }
+
+        /* 📺 全屏预览弹窗 (PPT专用) */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; flex-direction: column; }
+        .modal-header { height: 50px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; background: #222; color: #fff; }
+        .close-modal { background: none; border: none; color: #fff; font-size: 24px; cursor: pointer; }
+        .modal-body { flex: 1; width: 100%; height: 100%; }
+        iframe.full-viewer { width: 100%; height: 100%; border: none; }
+
+        /* 手机适配 */
+        @media (max-width: 600px) {
+            .folder-grid { grid-template-columns: 1fr; }
+            .file-grid { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body oncontextmenu="return false">
 
-<div class="sticky-header">
-    <h1 class="site-title">🏫 汽车构造课程资源库</h1>
-    <input type="text" class="search-box" id="searchInput" placeholder="🔍 搜索视频、课件或图片...">
+<div class="header">
+    <div style="display:flex; align-items:center; gap:10px;">
+        <button class="back-btn" id="backBtn" onclick="goHome()">← 返回首页</button>
+        <h1 class="site-title" id="pageTitle">资源库首页</h1>
+    </div>
+    </div>
+
+<div class="container">
+    <div id="folderView" class="folder-grid">
+        </div>
+
+    <div id="fileView" class="file-grid">
+        </div>
 </div>
 
-<div id="contentArea"></div>
+<div id="previewModal" class="modal">
+    <div class="modal-header">
+        <span id="modalTitle">预览</span>
+        <button class="close-modal" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body" id="modalContent"></div>
+</div>
 
 <script>
     // R2 根链接
     const r2Base = "https://pub-5c5bb9aa72d54e53abacca6b652c98e4.r2.dev/";
-    
-    // 微软 Office 在线预览前缀
     const msViewer = "https://view.officeapps.live.com/op/embed.aspx?src=";
 
-    // ==========================================
-    // 【核心配置区】已为您添加了图片板块
-    // ==========================================
+    // ================= 配置区 =================
     const projects = [
         {
-            projectName: "第一部分：教学视频", 
-            folderName: "《汽车构造》/视频",   
+            id: "video",
+            name: "教学视频 (72讲)",
+            icon: "🎬",
+            color: "#e3f2fd",
+            folderName: "《汽车构造》/视频",
             items: [
         "01-汽车分类与结构认知.mp4", "02-汽车识别代码和技术参数认知.mp4", "3.发动机的总体结构和工作原理认知.mp4",
         "4.机体组及活塞连杆组认知.mp4", "5.机体组与活塞连杆组拆卸检修.mp4", "6.曲轴飞轮组认知.mp4",
@@ -97,7 +130,10 @@
             ]
         },
         {
-            projectName: "第二部分：思政课件 (PPT)", 
+            id: "ppt",
+            name: "思政课件 (PPT)",
+            icon: "📊",
+            color: "#ffebee",
             folderName: "《汽车构造》/PPT",
             items: [
                 "思政01-国家情怀.pptx",
@@ -108,9 +144,11 @@
             ]
         },
         {
-            // 【新增】第三部分：教学图片
-            projectName: "第三部分：教学图片素材",
-            folderName: "《汽车构造》/图片", // 对应您截图里的路径
+            id: "image",
+            name: "教学图片素材",
+            icon: "🖼️",
+            color: "#e8f5e9",
+            folderName: "《汽车构造》/图片",
             items: [
                 "1.jpg", "2.jpg", "3.jpg", "4.jpg", "5.jpg",
                 "6.jpg", "7.jpg", "8.jpg", "9.jpg", "10.jpg"
@@ -118,108 +156,138 @@
         }
     ];
 
-    const contentArea = document.getElementById('contentArea');
-    const searchInput = document.getElementById('searchInput');
+    // ================= 核心逻辑 =================
+    const folderView = document.getElementById('folderView');
+    const fileView = document.getElementById('fileView');
+    const backBtn = document.getElementById('backBtn');
+    const pageTitle = document.getElementById('pageTitle');
+    const modal = document.getElementById('previewModal');
+    const modalContent = document.getElementById('modalContent');
 
-    // 辅助函数：判断文件类型
-    function getFileType(filename) {
-        const ext = filename.split('.').pop().toLowerCase();
-        if (['mp4', 'mov', 'webm'].includes(ext)) return 'video';
-        if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) return 'image';
-        if (['ppt', 'pptx', 'doc', 'docx', 'xlsx'].includes(ext)) return 'office';
-        if (['pdf'].includes(ext)) return 'pdf';
-        return 'unknown';
-    }
-
-    // 核心渲染函数
-    function render(filter = '') {
-        contentArea.innerHTML = '';
-        
-        projects.forEach(project => {
-            const isTitleMatch = project.projectName.toLowerCase().includes(filter.toLowerCase());
-            const filteredItems = project.items.filter(f => f.toLowerCase().includes(filter.toLowerCase()) || isTitleMatch);
-            const itemsToShow = isTitleMatch ? project.items : filteredItems;
-
-            if (itemsToShow.length > 0) {
-                // 1. 渲染板块标题
-                const section = document.createElement('div');
-                section.className = 'project-section';
-                section.innerHTML = `
-                    <div class="project-title">${project.projectName}</div>
-                    <span class="project-badge">${itemsToShow.length} 个资源</span>
-                    <div class="project-line"></div>
-                `;
-                contentArea.appendChild(section);
-
-                // 2. 渲染资源网格
-                const grid = document.createElement('div');
-                grid.className = 'resource-grid';
-                
-                itemsToShow.forEach(filename => {
-                    // 处理多级路径和中文编码
-                    const cleanFolder = project.folderName ? project.folderName.replace(/\/$/, '') : "";
-                    const folderPart = cleanFolder ? (encodeURI(cleanFolder) + "/") : "";
-                    const rawUrl = r2Base + folderPart + encodeURIComponent(filename);
-                    
-                    const type = getFileType(filename);
-                    let contentHtml = '';
-                    let tagHtml = '';
-
-                    if (type === 'video') {
-                        tagHtml = '<span class="file-tag" style="background:#007aff;">视频</span>';
-                        contentHtml = `
-                            <div class="media-wrapper" style="background:#000;">
-                                <video controls controlsList="nodownload" playsinline preload="none" oncontextmenu="return false">
-                                    <source src="${rawUrl}" type="video/mp4">
-                                </video>
-                                <div class="security-overlay video-mask"></div>
-                            </div>`;
-                    } 
-                    else if (type === 'image') {
-                        tagHtml = '<span class="file-tag" style="background:#4ecdc4;">图片</span>';
-                        // 图片保护：禁止拖拽 + 全屏透明遮罩禁止右键
-                        contentHtml = `
-                            <div class="media-wrapper">
-                                <img src="${rawUrl}" class="safe-img" ondragstart="return false" alt="${filename}">
-                                <div class="security-overlay"></div>
-                            </div>`;
-                    } 
-                    else if (type === 'office') {
-                        tagHtml = '<span class="file-tag" style="background:#ff6b6b;">PPT</span>';
-                        // PPT在线预览
-                        contentHtml = `
-                            <div class="media-wrapper">
-                                <iframe class="doc-viewer" src="${msViewer + encodeURIComponent(rawUrl)}&wdAr=1.77"></iframe>
-                            </div>`;
-                    }
-                    else if (type === 'pdf') {
-                        tagHtml = '<span class="file-tag" style="background:#ff9f43;">PDF</span>';
-                        contentHtml = `
-                            <div class="media-wrapper">
-                                <iframe class="doc-viewer" src="${rawUrl}#toolbar=0"></iframe>
-                            </div>`;
-                    }
-
-                    const card = document.createElement('div');
-                    card.className = 'card';
-                    card.innerHTML = `
-                        ${contentHtml}
-                        <div class="info"><h3>${tagHtml}${filename}</h3></div>
-                    `;
-                    grid.appendChild(card);
-                });
-                
-                contentArea.appendChild(grid);
-            }
+    // 1. 初始化：渲染首页文件夹
+    function init() {
+        folderView.innerHTML = '';
+        projects.forEach((proj, index) => {
+            const div = document.createElement('div');
+            div.className = 'folder-card';
+            div.style.borderBottom = `5px solid ${proj.color.replace('e', 'c')}`; // 底部颜色条
+            div.onclick = () => openFolder(index);
+            div.innerHTML = `
+                <span class="folder-icon">${proj.icon}</span>
+                <div class="folder-name">${proj.name}</div>
+                <div class="folder-count">${proj.items.length} 个文件</div>
+            `;
+            folderView.appendChild(div);
         });
-
-        if (contentArea.innerHTML === '') {
-            contentArea.innerHTML = '<div style="text-align:center;color:#999;margin-top:50px;">未找到相关内容</div>';
-        }
     }
 
-    searchInput.addEventListener('input', (e) => render(e.target.value));
-    render();
+    // 2. 打开文件夹
+    function openFolder(index) {
+        const proj = projects[index];
+        folderView.style.display = 'none';
+        fileView.style.display = 'grid';
+        backBtn.style.display = 'block';
+        pageTitle.innerText = proj.name;
+        
+        renderFiles(proj);
+        window.scrollTo(0, 0);
+    }
+
+    // 3. 返回首页
+    function goHome() {
+        fileView.style.display = 'none';
+        folderView.style.display = 'grid';
+        backBtn.style.display = 'none';
+        pageTitle.innerText = "资源库首页";
+        fileView.innerHTML = ''; // 清空以节省内存
+        closeModal(); // 关掉可能打开的弹窗
+    }
+
+    // 4. 渲染文件列表
+    function renderFiles(proj) {
+        fileView.innerHTML = '';
+        const cleanFolder = proj.folderName ? proj.folderName.replace(/\/$/, '') : "";
+        const folderPart = cleanFolder ? (encodeURI(cleanFolder) + "/") : "";
+
+        proj.items.forEach(filename => {
+            const rawUrl = r2Base + folderPart + encodeURIComponent(filename);
+            const ext = filename.split('.').pop().toLowerCase();
+            const card = document.createElement('div');
+            card.className = 'card';
+
+            let contentHTML = '';
+
+            // --- 视频逻辑 ---
+            if (['mp4', 'mov'].includes(ext)) {
+                // 关键修改：去掉了 video-mask，保留了 nodownload 和 oncontextmenu
+                // 这样既能点播放，又不能右键另存为
+                contentHTML = `
+                    <div class="media-wrapper" style="background:#000;">
+                        <video controls controlsList="nodownload" playsinline preload="metadata" oncontextmenu="return false">
+                            <source src="${rawUrl}" type="video/mp4">
+                        </video>
+                    </div>`;
+            } 
+            // --- 图片逻辑 ---
+            else if (['jpg', 'png', 'jpeg'].includes(ext)) {
+                contentHTML = `
+                    <div class="media-wrapper">
+                        <img src="${rawUrl}" class="safe-img" ondragstart="return false">
+                        <div class="security-overlay"></div>
+                    </div>`;
+            } 
+            // --- PPT/PDF 逻辑 (关键升级：点击放大) ---
+            else {
+                const isPdf = ext === 'pdf';
+                const icon = isPdf ? '📄' : '📊';
+                const typeText = isPdf ? 'PDF文档' : 'PPT课件';
+                
+                // 这里不加载 iframe，只显示点击按钮
+                contentHTML = `
+                    <div class="media-wrapper" onclick="previewDoc('${rawUrl}', '${ext}', '${filename}')" style="cursor:pointer;">
+                        <div class="ppt-cover">
+                            <div class="ppt-icon">${icon}</div>
+                            <div class="ppt-hint">点击全屏预览</div>
+                            <div style="font-size:0.8em;color:#999;margin-top:5px;">${typeText}</div>
+                        </div>
+                    </div>`;
+            }
+
+            card.innerHTML = `
+                ${contentHTML}
+                <div class="info"><h3>${filename}</h3></div>
+            `;
+            fileView.appendChild(card);
+        });
+    }
+
+    // 5. 全屏预览功能
+    window.previewDoc = function(url, ext, title) {
+        document.getElementById('modalTitle').innerText = title;
+        modal.style.display = 'flex';
+        modalContent.innerHTML = '<div style="color:#fff;text-align:center;padding-top:50px;">正在加载高清预览...</div>';
+
+        let iframeSrc = "";
+        if (['ppt', 'pptx', 'doc', 'docx'].includes(ext)) {
+            iframeSrc = msViewer + encodeURIComponent(url);
+        } else if (ext === 'pdf') {
+            iframeSrc = url + "#toolbar=0";
+        }
+
+        // 延迟一点加载，体验更好
+        setTimeout(() => {
+            modalContent.innerHTML = `<iframe class="full-viewer" src="${iframeSrc}"></iframe>`;
+        }, 300);
+    }
+
+    window.closeModal = function() {
+        modal.style.display = 'none';
+        modalContent.innerHTML = ''; // 清空内容停止加载
+    }
+
+    // 启动
+    init();
+
 </script>
 
 </body>
