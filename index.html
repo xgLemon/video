@@ -8,23 +8,11 @@
         body { font-family: -apple-system, sans-serif; background: #f4f7f9; margin: 0; padding: 0; color: #333; -webkit-user-select: none; user-select: none; }
         .sticky-header { position: sticky; top: 0; background: #fff; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.1); padding: 15px; text-align: center; }
         .search-box { width: 90%; max-width: 500px; padding: 12px; border: 2px solid #007aff; border-radius: 25px; outline: none; font-size: 16px; margin-top: 10px; }
-        .stats { font-size: 0.9em; color: #666; margin-top: 8px; }
         .video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; padding: 20px; max-width: 1400px; margin: 0 auto; }
-        
         .video-card { background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); position: relative; }
         .video-wrapper { width: 100%; aspect-ratio: 16/9; background: #000; position: relative; }
-        
-        /* 优化后的遮罩：高度设为 85%，避开底部的播放控制条 */
-        .video-overlay {
-            position: absolute; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 85%; 
-            z-index: 5; 
-            background: rgba(0,0,0,0);
-        }
-        
+        /* 视频遮罩：防右键下载 */
+        .video-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 85%; z-index: 5; background: rgba(0,0,0,0); }
         video { width: 100%; height: 100%; display: block; }
         .info { padding: 12px; border-top: 1px solid #eee; }
         .info h3 { margin: 0; font-size: 0.95rem; color: #2c3e50; line-height: 1.4; }
@@ -34,125 +22,76 @@
 
 <div class="sticky-header">
     <h2 style="margin:0;">《汽车构造》教学视频库</h2>
-    <input type="text" class="search-box" id="searchInput" placeholder="🔍 搜索视频...">
-    <div class="stats">共 <span id="totalCount">0</span> 个教学资源 | 保护模式已开启</div>
+    <input type="text" class="search-box" id="searchInput" placeholder="🔍 输入序号或名称搜索...">
+    <div style="font-size:0.8em; color:#999; margin-top:8px;">存储：Cloudflare R2 | 流量费用：0元</div>
 </div>
 
 <div class="video-grid" id="videoGrid"></div>
 
 <script>
-    // 这里包含您 CSV 中的 72 条链接（代码中已自动整合）
-    const rawData = [
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/1-%E6%B1%BD%E8%BD%A6%E5%88%86%E7%B1%BB%E4%B8%8E%E7%BB%93%E6%9E%84%E8%AE%A4%E7%9F%A5.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/2-%E6%B1%BD%E8%BD%A6%E8%AF%86%E5%88%AB%E4%BB%A3%E7%A0%81%E5%92%8C%E6%8A%80%E6%9C%AF%E5%8F%82%E6%95%B0%E8%AE%A4%E7%9F%A5.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/3.%E5%8F%91%E5%8A%A8%E6%9C%BA%E7%9A%84%E6%80%BB%E4%BD%93%E7%BB%93%E6%9E%84%E5%92%8C%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86%E8%AE%A4%E7%9F%A5.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/4.%E6%9C%BA%E4%BD%93%E7%BB%84%E5%8F%8A%E6%B4%BB%E5%A1%9E%E8%BF%9E%E6%9D%86%E7%BB%84%E8%AE%A4%E7%9F%A5.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/5.%E6%9C%BA%E4%BD%93%E7%BB%84%E4%B8%8E%E6%B4%BB%E5%A1%9E%E8%BF%9E%E6%9D%86%E7%BB%84%E6%8B%86%E5%8D%B8%E6%A3%80%E4%BF%AE.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/6.%E6%9B%B2%E8%BD%B4%E9%A3%9E%E8%BD%AE%E7%BB%84%E8%AE%A4%E7%9F%A5.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/7.%E6%9B%B2%E8%BD%B4%E9%A3%9E%E8%BD%AE%E7%BB%84%E6%8B%86%E8%A3%85%E6%A3%80%E4%BF%AE.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/8.%E9%85%8D%E6%B0%94%E6%9C%BA%E6%9E%84%E7%9A%84%E4%B8%BB%E8%A6%81%E9%83%A8%E4%BB%B6%E8%AE%A4%E7%9F%A5.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/9.%E9%85%8D%E6%B0%94%E6%9C%BA%E6%9E%84%E6%8B%86%E8%A3%85%E6%A3%80%E4%BF%AE.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/10.%E7%87%83%E6%B2%B9%E4%BE%9B%E7%BB%99%E7%B3%BB%E7%BB%9F%E8%AE%A4%E7%9F%A5.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/11.%E7%87%83%E6%B2%B9%E4%BE%9B%E7%BB%99%E7%B3%BB%E7%BB%9F%E6%8B%86%E8%A3%85%E6%A3%80%E4%BF%AE.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/12.%E6%B6%A6%E6%BB%91%E7%B3%BB%E4%B8%BB%E8%A6%81%E9%83%A8%E4%BB%B6%E8%AE%A4%E7%9F%A5.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/13.%E6%B6%A6%E6%BB%91%E7%B3%BB%E7%BB%9F%E6%8B%86%E8%A3%85%E6%A3%80%E4%BF%AE.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/14.%E5%86%B7%E5%8D%B4%E7%B3%BB%E7%BB%9F%E4%B8%BB%E8%A6%81%E9%83%A8%E4%BB%B6%E8%AE%A4%E7%9F%A5.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/15.%E5%86%B7%E5%8D%B4%E7%B3%BB%E7%BB%9F%E6%8B%86%E8%A3%85%E6%A3%80%E4%BF%AE.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/16.%E7%82%B9%E7%81%AB%E7%B3%BB%E7%9A%84%E4%B8%BB%E8%A6%81%E9%83%A8%E4%BB%B6%E8%AE%A4%E7%9F%A5.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/17.%E7%82%B9%E7%81%AB%E7%B3%BB%E7%BB%9F%E6%8B%86%E8%A3%85%E6%A3%80%E4%BF%AE.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/18.%E8%B5%B7%E5%8A%A8%E7%B3%BB%E7%9A%84%E4%B8%BB%E8%A6%81%E9%83%A8%E4%BB%B6%E8%AE%A4%E7%9F%A5.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/19.%E5%90%AF%E5%8A%A8%E7%B3%BB%E7%BB%9F%E6%8B%86%E8%A3%85%E6%A3%80%E4%BF%AE.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/20.%E4%BC%A0%E5%8A%A8%E7%B3%BB%E7%BB%9F%E5%8F%8A%E5%B8%83%E7%BD%AE%E5%BD%A2%E5%BC%8F%E8%AE%A4%E7%9F%A5.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/21.%E4%BC%A0%E5%8A%A8%E7%B3%BB%E7%BB%9F%E5%8A%A8%E5%8A%9B%E4%BC%A0%E9%80%92%E8%BF%87%E7%A8%8B%E8%AE%A4%E7%9F%A5.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/22.%E7%A6%BB%E5%90%88%E5%99%A8%E8%AE%A4%E7%9F%A5.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/23.%E7%A6%BB%E5%90%88%E5%99%A8%E6%8B%86%E8%A3%85%E6%A3%80%E4%BF%AE.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/24.%E7%A6%BB%E5%90%88%E5%99%A8%E5%B8%B8%E8%A7%81%E6%95%85%E9%9A%9C%E5%88%86%E6%9E%90%E4%B8%8E%E6%8E%92%E9%99%A4.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/25.%E5%8F%98%E9%80%9F%E5%99%A8%E8%AE%A4%E7%9F%A5%E4%B8%8E%E5%8F%98%E6%8C%A1%E8%BF%87%E7%A8%8B%E8%AE%A4%E7%9F%A5.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/26.%E8%A1%A8%E9%80%9F%E5%99%A8%E6%B2%B9%E6%B6%B2%E6%8E%92%E6%94%BE%E4%B8%8E%E5%8A%A0%E6%B3%A8.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/27.%E5%88%86%E8%A7%A3%E4%B8%8E%E7%BB%84%E8%A3%85%E8%87%AA%E5%8A%A8%E5%8F%98%E9%80%9F%E5%99%A8.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/28.%E4%B8%87%E5%90%91%E4%BC%A0%E5%8A%A8%E8%A3%85%E7%BD%AE%E8%AE%A4%E7%9F%A5.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/29.%E4%B8%87%E5%90%91%E4%BC%A0%E5%8A%A8%E8%A3%85%E7%BD%AE%E6%8B%86%E8%A3%85%E6%A3%80%E4%BF%AE.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/30.%E9%A9%B1%E5%8A%A8%E6%A1%A5%E8%AE%A4%E7%9F%A5.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/31.%E8%BD%A6%E6%9E%84%E8%AE%A4%E7%9F%A5.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/32.%E8%BD%车轮轮胎认知.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/32.%E8%BD%A6%E8%BD%AE%E8%BD%A6%E8%83%8E%E8%AE%A4%E7%9F%A5.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/33.%E8%BD%A6%E8%BD%AE%E6%8B%86%E8%A3%85%E6%A3%80%E4%BF%AE.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/34.%E6%82%AC%E6%9E%B6%E7%B3%BB%E7%BB%9F%E8%AE%A4%E7%9F%A5.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/35.%E6%82%AC%E6%9E%B6%E6%8B%86%E8%A3%85%E6%A3%80%E4%BF%AE.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/36.%E8%BD%AC%E5%90%91%E4%B8%8E%E6%93%8D%E7%BA%B5%E7%B3%BB%E7%BB%9F%E8%AE%A4%E7%9F%A5.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/37.%E8%BD%AC%E5%90%91%E6%93%8D%E7%BA%B5%E7%B3%BB%E7%BB%9F%E6%8B%86%E8%A3%85%E6%A3%80%E4%BF%AE.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/38.%E8%BD%AC%E5%90%91%E5%99%A8%E8%AE%A4%E7%9F%A5.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/39.%E8%BD%AC%E5%90%91%E5%99%A8%E6%8B%86%E8%A3%85%E6%A3%80%E4%BF%AE.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/40.%E6%B6%B2%E5%8E%8B%E5%8A%A9%E5%8A%9B%E8%BD%AC%E5%90%91%E4%BC%A0%E5%8A%A8%E7%B3%BB%E7%BB%9F%E8%AE%A4%E7%9F%A5.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/41.%E6%B6%B2%E5%8E%8B%E5%8A%A9%E5%8A%9B%E8%BD%AC%E5%90%91%E4%BC%A0%E5%8A%A8%E8%A3%85%E7%BD%AE%E6%8B%86%E8%A3%85%E6%A3%80%E4%BF%AE.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/42.%E7%94%B5%E5%8A%A8%E5%8A%A9%E5%8A%9B%E8%BD%AC%E5%90%91%E4%BC%A0%E5%8A%A8%E7%B3%BB%E7%BB%9F%E8%AE%A4%E7%9F%A5.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/43.%E7%94%B5%E5%8A%A8%E5%8A%A9%E5%8A%9B%E8%BD%AC%E5%90%91%E4%BC%A0%E5%8A%A8%E8%A3%85%E7%BD%AE%E6%8B%86%E8%A3%85%E6%A3%80%E4%BF%AE.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/44.%E5%88%B6%E5%8A%A8%E5%99%A8%E8%AE%A4%E7%9F%A5.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/45.%E7%9B%98%E5%BC%8F%E5%88%B6%E5%8A%A8%E5%99%A8%E6%8B%86%E8%A3%85%E6%A3%80%E4%BF%AE.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/46-%E9%BC%93%E5%BC%8F%E5%88%B6%E5%8A%A8%E5%99%A8%E6%8B%86%E8%A3%85%E6%A3%80%E4%BF%AE.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/47.%E6%B6%B2%E5%8E%8B%E3%80%81%E6%B0%94%E5%8E%8B%E5%88%B6%E5%8A%A8%E4%BC%A0%E5%8A%A8%E8%A3%85%E7%BD%AE%E8%AE%A4%E7%9F%A5.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/48.%E6%B6%B2%E5%8E%8B%E3%80%81%E6%B0%94%E5%8E%8B%E5%88%B6%E5%8A%A8%E4%BC%A0%E5%8A%A8%E8%A3%85%E7%BD%AE%E6%8B%86%E8%A3%85%E6%A3%80%E4%BF%AE.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/49.ABS%E3%80%81ASR%E5%88%B6%E5%8A%A8%E6%8E%A7%E5%88%B6%E7%B3%BB%E7%BB%9F%E8%AE%A4%E7%9F%A5.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/50.ABS%E3%80%81ASR%E5%88%B6%E5%8A%A8%E6%8E%A7%E5%88%B6%E7%B3%BB%E7%BB%9F%E6%8B%86%E8%A3%85%E6%A3%80%E4%BF%AE.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/51.%E6%B1%BD%E8%BD%A6%E8%BD%A6%E8%BA%AB%E7%BB%93%E6%9E%84%E5%8F%8A%E9%99%84%E4%BB%B6%E8%AE%A4%E7%9F%A5.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/52.%E6%B1%BD%E8%BD%A6%E8%BD%A6%E8%BA%AB%E7%BB%93%E6%9E%84%E5%8F%8A%E9%99%84%E4%BB%B6%E6%8B%86%E8%A3%85.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/53.%E6%B1%BD%E8%BD%A6%E4%BB%AA%E8%A1%A8%E8%AE%A4%E7%9F%A5.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/54.%E6%B1%BD%E8%BD%A6%E4%BB%AA%E8%A1%A8%E6%8B%86%E8%A3%85%E6%A3%80%E4%BF%AE.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/55.%E6%B1%BD%E8%BD%A6%E7%85%A7%E6%98%8E%E8%A3%85%E7%BD%AE%E8%AE%A4%E7%9F%A5.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/56.%E6%B1%BD%E8%BD%A6%E7%85%A7%E6%98%8E%E8%A3%85%E7%BD%AE%E6%8B%86%E8%A3%85%E6%A3%80%E4%BF%AE.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/57.%E6%B1%BD%E8%BD%A6%E7%94%B5%E5%8A%A8%E8%BD%A6%E7%AA%97%E8%AE%A4%E7%9F%A5.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/58.%E6%B1%BD%E8%BD%A6%E7%94%B5%E5%8A%A8%E8%BD%A6%E7%AA%97%E6%8B%86%E8%A3%85.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/59.%E6%B1%BD%E8%BD%A6%E7%94%B5%E5%8A%A8%E5%BA%A7%E6%A4%85%E8%AE%A4%E7%9F%A5.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/60.%E6%B1%BD%E8%BD%A6%E7%94%B5%E5%8A%A8%E5%BA%A7%E6%A4%85%E6%8B%86%E8%A3%85.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/61.%E6%B1%BD%E8%BD%A6%E7%94%B5%E5%8A%A8%E8%BE%85%E5%8A%A9%E8%A3%85%E7%BD%AE%E8%AE%A4%E7%9F%A5.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/62.%E6%B1%BD%E8%BD%A6%E7%94%B5%E5%8A%A8%E8%BE%85%E5%8A%A9%E8%A3%85%E7%BD%AE%E6%8B%86%E8%A3%85.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/63.%E6%B1%BD%E8%BD%A6%E7%A9%BA%E8%B0%83%E7%B3%BB%E7%BB%9F%E8%AE%A4%E7%9F%A5.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/64.%E6%B1%BD%E8%BD%A6%E7%A9%BA%E8%B0%83%E7%B3%BB%E7%BB%9F%E5%B8%B8%E8%A7%81%E6%95%85%E9%9A%9C%E6%A3%80%E4%BF%AE.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/65.%E6%96%B0%E8%83%BD%E6%BA%90%E6%B1%BD%E8%BD%A6%E8%AE%A4%E7%9F%A5.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/66.%E6%96%B0%E8%83%BD%E6%BA%90%E6%B1%BD%E8%BD%A6%E5%8A%A8%E5%8A%9B%E7%94%B5%E6%B1%A0%E7%B3%BB%E7%BB%9F%E8%AE%A4%E7%9F%A5.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/67.%E6%96%B0%E8%83%BD%E6%BA%90%E6%B1%BD%E8%BD%A6%E9%AB%98%E5%8E%8B%E5%AE%89%E5%85%A8%E7%BB%B4%E6%8A%A4.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/68.%E6%96%B0%E8%83%BD%E6%BA%90%E6%B1%BD%E8%BD%A6%E5%8A%A8%E5%8A%9B%E7%94%B5%E6%B1%A0%E7%B3%BB%E7%BB%9F%E6%8B%86%E8%A3%85%E6%A3%80%E4%BF%AE.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/69.%E6%96%B0%E8%83%BD%E6%BA%90%E6%B1%BD%E8%BD%A6%E9%A9%B1%E5%8A%A8%E7%94%B5%E6%9C%BA%E7%B3%BB%E7%BB%9F%E8%AE%A4%E7%9F%A5.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/70.%E6%96%B0%E8%83%BD%E6%BA%90%E6%B1%BD%E8%BD%A6%E9%A9%B1%E5%8A%A8%E7%94%B5%E6%9C%BA%E7%B3%BB%E7%BB%9F%E6%8B%86%E8%A3%85%E6%A3%80%E4%BF%AE.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/71.%E6%96%B0%E8%83%BD%E6%BA%90%E6%B1%BD%E8%BD%A6%E9%AB%98%E5%8E%8B%E9%85%8D%E7%94%B5%E7%B3%BB%E7%BB%9F%E8%AE%A4%E7%9F%A5.mp4",
-        "https://otor-video-lt.oss-cn-shenzhen.aliyuncs.com/%E3%80%8A%E6%B1%BD%E8%BD%A6%E6%9E%84%E9%80%A0%E3%80%8B/72.%E6%96%B0%E8%83%BD%E6%BA%90%E6%B1%BD%E8%BD%A6%E9%AB%98%E5%8E%8B%E9%85%8D%E7%94%B5%E7%B3%BB%E7%BB%9F%E6%8B%86%E8%A3%85%E6%A3%80%E4%BF%AE.mp4"
+    // 【请在此处填入你开启 R2.dev 后得到的链接】
+    // 注意：末尾要带上目录名 《汽车构造》/
+    const r2Base = "https://pub-eaa4beed94e0403684ba250e2f6cd2d9.r2.dev"; 
+
+    // 这里是你的 72 个视频文件名
+    const videoFiles = [
+        "1-汽车分类与结构认知.mp4", "2-汽车识别代码和技术参数认知.mp4", "3.发动机的总体结构和工作原理认知.mp4",
+        "4.机体组及活塞连杆组认知.mp4", "5.机体组与活塞连杆组拆卸检修.mp4", "6.曲轴飞轮组认知.mp4",
+        "7.曲轴飞轮组拆装检修.mp4", "8.配气机构的主要部件认知.mp4", "9.配气机构拆装检修.mp4",
+        "10.燃油供给系统认知.mp4", "11.燃油供给系统拆装检修.mp4", "12.润滑系主要部件认知.mp4",
+        "13.润滑系统拆装检修.mp4", "14.冷却系统主要部件认知.mp4", "15.冷却系统拆装检修.mp4",
+        "16.点火系的主要部件认知.mp4", "17.点火系统拆装检修.mp4", "18.起动系的主要部件认知.mp4",
+        "19.启动系统拆装检修.mp4", "20.传动系统及布置形式认知.mp4", "21.传动系统动力传递过程认知.mp4",
+        "22.离合器认知.mp4", "23.离合器拆装检修.mp4", "24.离合器常见故障分析与排除.mp4",
+        "25.变速器认知与变挡过程认知.mp4", "26.表速器油液排放与加注.mp4", "27.分解与组装自动变速器.mp4",
+        "28.万向传动装置认知.mp4", "29.万向传动装置拆装检修.mp4", "30.驱动桥认知.mp4",
+        "31.车架认知.mp4", "32.车轮车胎认知.mp4", "33.车轮拆装检修.mp4", "34.悬架系统认知.mp4",
+        "35.悬架拆装检修.mp4", "36.转向与操纵系统认知.mp4", "37.转向操纵系统拆装检修.mp4",
+        "38.转向器认知.mp4", "39.转向器拆装检修.mp4", "40.液压助力转向传动系统认知.mp4",
+        "41.液压助力转向传动装置拆装检修.mp4", "42.电动助力转向传动系统认知.mp4", "43.电动助力转向传动装置拆装检修.mp4",
+        "44.制动器认知.mp4", "45.盘式制动器拆装检修.mp4", "46-鼓式制动器拆装检修.mp4",
+        "47.液压、气压制动传动装置认知.mp4", "48.液压、气压制动传动装置拆装检修.mp4", "49.ABS、ASR制动控制系统认知.mp4",
+        "50.ABS、ASR制动控制系统拆装检修.mp4", "51.汽车车身结构及附件认知.mp4", "52.汽车车身结构及附件拆装.mp4",
+        "53.汽车仪表认知.mp4", "54.汽车仪表拆装检修.mp4", "55.汽车照明装置认知.mp4",
+        "56.汽车照明装置拆装检修.mp4", "57.汽车电动车窗认知.mp4", "58.汽车电动车窗拆装.mp4",
+        "59.汽车电动座椅认知.mp4", "60.汽车电动座椅拆装.mp4", "61.汽车电动辅助装置认知.mp4",
+        "62.汽车电动辅助装置拆装.mp4", "63.汽车空调系统认知.mp4", "64.汽车空调系统常见故障检修.mp4",
+        "65.新能源汽车认知.mp4", "66.新能源汽车动力电池系统认知.mp4", "67.新能源汽车高压安全维护.mp4",
+        "68.新能源汽车动力电池系统拆装检修.mp4", "69.新能源汽车驱动电机系统认知.mp4", "70.新能源汽车驱动电机系统拆装检修.mp4",
+        "71.新能源汽车高压配电系统认知.mp4", "72.新能源汽车高压配电系统拆装检修.mp4"
     ];
 
     const grid = document.getElementById('videoGrid');
     const searchInput = document.getElementById('searchInput');
 
-    // 智能排序
-    const sortedVideos = rawData.map(url => {
-        const title = decodeURIComponent(url.split('/').pop().replace('.mp4', ''));
-        const match = title.match(/^(\d+)/);
-        return { title, url, order: match ? parseInt(match[1]) : 999 };
+    // 自动排序逻辑：提取文件名开头的数字
+    const sortedData = videoFiles.map(name => {
+        const match = name.match(/^(\d+)/);
+        return { name, order: match ? parseInt(match[1]) : 999 };
     }).sort((a, b) => a.order - b.order);
 
-    function display(filter = '') {
+    function render(filter = '') {
         grid.innerHTML = '';
-        let count = 0;
-        sortedVideos.forEach(v => {
-            if (v.title.toLowerCase().includes(filter.toLowerCase())) {
-                count++;
+        sortedData.forEach(item => {
+            if (item.name.includes(filter)) {
                 const card = document.createElement('div');
                 card.className = 'video-card';
                 card.innerHTML = `
                     <div class="video-wrapper">
                         <video controls controlsList="nodownload" playsinline preload="none">
-                            <source src="${v.url}" type="video/mp4">
+                            <source src="${r2Base + encodeURIComponent(item.name)}" type="video/mp4">
                         </video>
                         <div class="video-overlay"></div>
                     </div>
-                    <div class="info"><h3>${v.title}</h3></div>
+                    <div class="info"><h3>${item.name.replace('.mp4','')}</h3></div>
                 `;
                 grid.appendChild(card);
             }
         });
-        document.getElementById('totalCount').innerText = count;
     }
 
-    searchInput.addEventListener('input', (e) => display(e.target.value));
-    setTimeout(() => display(), 100);
+    searchInput.addEventListener('input', (e) => render(e.target.value));
+    render();
 </script>
 
 </body>
