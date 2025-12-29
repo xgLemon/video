@@ -15,7 +15,7 @@
         
         .container { max-width: 1200px; margin: 20px auto; padding: 0 20px; }
 
-        /* 📁 文件夹网格 */
+        /* 网格系统 */
         .folder-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; padding-top: 20px; }
         .folder-card { background: #fff; border-radius: 16px; padding: 30px; text-align: center; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border: 2px solid transparent; position: relative; }
         .folder-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.08); border-color: #007aff; }
@@ -24,24 +24,21 @@
         .folder-desc { font-size: 0.9rem; color: #999; margin-top: 5px; }
         .badge { position: absolute; top: 15px; right: 15px; background: #f0f2f5; color: #666; font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; }
 
-        /* 📄 文件列表视图 */
+        /* 文件列表 */
         .file-grid { display: none; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
         
         .card { background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05); transition: transform 0.2s; }
         .card:hover { transform: translateY(-3px); }
         
-        /* 媒体容器 */
         .media-wrapper { width: 100%; aspect-ratio: 16/9; background: #000; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; cursor: pointer; }
         
-        /* 视频占位符 */
         .video-placeholder { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #222; color: #fff; }
         .play-icon { font-size: 3rem; opacity: 0.9; transition: transform 0.2s; }
         .video-placeholder:hover .play-icon { transform: scale(1.1); color: #007aff; }
         
         video { width: 100%; height: 100%; object-fit: contain; background: #000; outline: none; }
-
-        /* 图片 & PPT 封面 */
         .safe-img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+        
         .ppt-cover { text-align: center; width: 100%; background: #f8f9fa; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .ppt-icon { font-size: 3rem; color: #ff6b6b; margin-bottom: 10px; }
 
@@ -86,32 +83,21 @@
     const r2Base = "https://pub-5c5bb9aa72d54e53abacca6b652c98e4.r2.dev/";
     const msViewer = "https://view.officeapps.live.com/op/embed.aspx?src=";
 
-    // ================= 🔊 音效配置区域 =================
-    // 使用在线音效资源 (文件夹声 / 点击声)
+    // 音效
     const folderSound = new Audio("https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3");
     const fileSound = new Audio("https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3");
 
-    // 音效播放辅助函数
-    function playFolderSound() {
-        folderSound.currentTime = 0;
-        folderSound.play().catch(() => {}); // catch 防止浏览器自动播放策略报错
-    }
-    function playFileSound() {
-        fileSound.currentTime = 0;
-        fileSound.play().catch(() => {});
-    }
-    // ===================================================
+    function playFolderSound() { folderSound.currentTime = 0; folderSound.play().catch(() => {}); }
+    function playFileSound() { fileSound.currentTime = 0; fileSound.play().catch(() => {}); }
 
-    // ================= 核心数据结构 (三级目录) =================
+    // ================= 数据 =================
     const courseData = [
         {
-            // Level 1: 项目
             title: "《汽车构造》课程",
             icon: "🚗",
             desc: "包含视频、课件与图库",
             subFolders: [
                 {
-                    // Level 2: 分类
                     name: "教学视频",
                     icon: "🎬",
                     color: "#e3f2fd",
@@ -149,11 +135,8 @@
                     color: "#ffebee",
                     path: "《汽车构造》/PPT",
                     files: [
-                        "思政01-国家情怀.pptx",
-                        "思政02-大国自信.pptx",
-                        "思政03-工匠精神.pptx",
-                        "思政04-创新精神.pptx",
-                        "思政05-科技精神.pptx"
+                        "思政01-国家情怀.pptx", "思政02-大国自信.pptx", "思政03-工匠精神.pptx",
+                        "思政04-创新精神.pptx", "思政05-科技精神.pptx"
                     ]
                 },
                 {
@@ -170,7 +153,7 @@
         }
     ];
 
-    // ================= 逻辑控制 =================
+    // ================= 核心控制 =================
     const folderGrid = document.getElementById('folderGrid');
     const fileGrid = document.getElementById('fileGrid');
     const backBtn = document.getElementById('backBtn');
@@ -178,22 +161,70 @@
     const modal = document.getElementById('previewModal');
     const modalContent = document.getElementById('modalContent');
 
+    // 状态
     let currentLevel = 0;
     let currentProjectIndex = 0;
 
-    // 1. 初始化：渲染首页
-    function renderHome() {
+    // 【核心修复1】页面加载时，检查网址里有没有 Hash，如果有就恢复位置
+    window.onload = function() {
+        checkHash();
+    };
+
+    // 监听浏览器前进/后退按钮
+    window.onpopstate = function() {
+        checkHash();
+    };
+
+    // 解析 Hash 并跳转 (#project=0&sub=1)
+    function checkHash() {
+        const hash = window.location.hash.substring(1); // 去掉 #
+        const params = new URLSearchParams(hash);
+        
+        const pIndex = params.get('p');
+        const sIndex = params.get('s');
+
+        if (pIndex !== null && sIndex !== null) {
+            // 恢复到文件列表页
+            renderProject(parseInt(pIndex), false); // false = 不更新hash
+            renderFiles(courseData[pIndex].subFolders[parseInt(sIndex)], false);
+        } else if (pIndex !== null) {
+            // 恢复到分类页
+            renderProject(parseInt(pIndex), false);
+        } else {
+            // 默认首页
+            renderHome(false);
+        }
+    }
+
+    // 更新 Hash (不刷新页面)
+    function updateHash(pIndex, sIndex) {
+        let hash = '';
+        if (pIndex !== null) hash += `p=${pIndex}`;
+        if (sIndex !== null) hash += `&s=${sIndex}`;
+        
+        if (hash) {
+            window.location.hash = hash;
+        } else {
+            // 清除 Hash
+            history.pushState("", document.title, window.location.pathname + window.location.search);
+        }
+    }
+
+    // 1. 渲染首页
+    function renderHome(shouldUpdateHash = true) {
+        if(shouldUpdateHash) updateHash(null, null);
+
         currentLevel = 0;
         folderGrid.style.display = 'grid';
         fileGrid.style.display = 'none';
         backBtn.style.display = 'none';
         pageTitle.innerText = "凌泰教育课程资源首页";
         folderGrid.innerHTML = '';
+        fileGrid.innerHTML = ''; // 清理视频
 
         courseData.forEach((proj, index) => {
             const div = document.createElement('div');
             div.className = 'folder-card';
-            // 【音效】点击项目文件夹
             div.onclick = () => { playFolderSound(); renderProject(index); };
             div.innerHTML = `
                 <div class="badge">项目</div>
@@ -203,23 +234,26 @@
             `;
             folderGrid.appendChild(div);
         });
+        closeModal();
     }
 
-    // 2. 进入项目：渲染分类
-    function renderProject(index) {
+    // 2. 渲染分类
+    function renderProject(index, shouldUpdateHash = true) {
+        if(shouldUpdateHash) updateHash(index, null);
+
         currentLevel = 1;
         currentProjectIndex = index;
         backBtn.style.display = 'block';
         pageTitle.innerText = courseData[index].title;
         folderGrid.innerHTML = '';
+        fileGrid.innerHTML = ''; // 清理视频
 
         const subFolders = courseData[index].subFolders;
         subFolders.forEach((sub, subIndex) => {
             const div = document.createElement('div');
             div.className = 'folder-card';
             div.style.borderBottom = `5px solid ${sub.color.replace('e', 'c')}`;
-            // 【音效】点击分类文件夹
-            div.onclick = () => { playFolderSound(); renderFiles(sub); };
+            div.onclick = () => { playFolderSound(); renderFiles(sub, subIndex); }; // 传 subIndex
             div.innerHTML = `
                 <div class="badge">分类</div>
                 <span class="folder-icon">${sub.icon}</span>
@@ -228,10 +262,20 @@
             `;
             folderGrid.appendChild(div);
         });
+        folderGrid.style.display = 'grid';
+        fileGrid.style.display = 'none';
+        closeModal();
     }
 
-    // 3. 进入文件列表
-    function renderFiles(subFolderData) {
+    // 3. 渲染文件列表 (注意参数变化)
+    function renderFiles(subFolderData, subIndex = null) {
+        // 如果是从点击来的，更新 Hash
+        if (subIndex !== null) updateHash(currentProjectIndex, subIndex);
+        // 如果只是 checkHash 调用的，subIndex 可能拿不到，不需要 updateHash 因为已经是正确的了
+
+        // 注意：如果是 checkHash 内部调用，第二个参数是 false (boolean)，这里做了兼容处理
+        if (subIndex === false) { /* 不更新hash */ } 
+
         currentLevel = 2;
         folderGrid.style.display = 'none';
         fileGrid.style.display = 'grid';
@@ -248,8 +292,6 @@
             card.className = 'card';
 
             let contentHTML = '';
-
-            // 视频：懒加载
             if (['mp4', 'mov'].includes(ext)) {
                 const uniqueId = `vid-${idx}`;
                 contentHTML = `
@@ -259,17 +301,13 @@
                             <div style="font-size:0.8rem; margin-top:10px; color:#999;">点击播放</div>
                         </div>
                     </div>`;
-            } 
-            // 图片
-            else if (['jpg', 'png', 'jpeg'].includes(ext)) {
+            } else if (['jpg', 'png', 'jpeg'].includes(ext)) {
                 contentHTML = `
                     <div class="media-wrapper">
                         <img src="${rawUrl}" class="safe-img" ondragstart="return false">
                         <div class="security-overlay"></div>
                     </div>`;
-            } 
-            // PPT/PDF
-            else {
+            } else {
                 const isPdf = ext === 'pdf';
                 const icon = isPdf ? '📄' : '📊';
                 const typeText = isPdf ? 'PDF文档' : 'PPT课件';
@@ -282,51 +320,38 @@
                         </div>
                     </div>`;
             }
-
-            card.innerHTML = `
-                ${contentHTML}
-                <div class="info"><h3>${filename}</h3></div>
-            `;
+            card.innerHTML = `${contentHTML}<div class="info"><h3>${filename}</h3></div>`;
             fileGrid.appendChild(card);
         });
         window.scrollTo(0, 0);
     }
 
-    // 返回逻辑
+    // 返回按钮
     function goBack() {
-        // 【音效】播放返回音效
         playFileSound();
-
-        // 强制清理：停止播放
-        fileGrid.innerHTML = ''; 
-
+        // 如果在文件页，回分类页
         if (currentLevel === 2) {
-            folderGrid.style.display = 'grid';
-            fileGrid.style.display = 'none';
-            renderProject(currentProjectIndex);
+            // 获取当前Hash中的p参数，回退到该p
+            const hash = window.location.hash.substring(1);
+            const params = new URLSearchParams(hash);
+            const p = params.get('p');
+            renderProject(parseInt(p));
         } else if (currentLevel === 1) {
             renderHome();
         }
-        closeModal();
     }
 
-    // 视频加载
+    // 视频播放 (互斥)
     window.loadVideo = function(id, url) {
-        // 【音效】播放点击音效
         playFileSound();
-
-        // 停止页面上所有正在播放的视频 (互斥逻辑)
         const allVideos = document.querySelectorAll('video');
-        allVideos.forEach(v => {
-            v.pause();
-        });
+        allVideos.forEach(v => v.pause());
 
         const container = document.getElementById(id);
         if(container.querySelector('video')) {
             container.querySelector('video').play(); 
             return;
         }
-        
         container.innerHTML = `
             <video controls autoplay controlsList="nodownload" playsinline oncontextmenu="return false">
                 <source src="${url}" type="video/mp4">
@@ -335,12 +360,9 @@
         container.style.cursor = 'default';
     }
 
-    // 预览弹窗
+    // 预览 PPT (互斥)
     window.previewDoc = function(url, ext, title) {
-        // 【音效】播放点击音效
         playFileSound();
-
-        // 打开 PPT 时停止后台视频 (互斥逻辑)
         const allVideos = document.querySelectorAll('video');
         allVideos.forEach(v => v.pause());
 
@@ -354,20 +376,25 @@
         } else if (ext === 'pdf') {
             iframeSrc = url + "#toolbar=0";
         }
-
-        setTimeout(() => {
-            modalContent.innerHTML = `<iframe class="full-viewer" src="${iframeSrc}"></iframe>`;
-        }, 300);
+        setTimeout(() => { modalContent.innerHTML = `<iframe class="full-viewer" src="${iframeSrc}"></iframe>`; }, 300);
     }
 
     window.closeModal = function() {
-        playFileSound(); // 关闭也可以有个声音
+        playFileSound();
         modal.style.display = 'none';
         modalContent.innerHTML = '';
     }
 
-    // 启动
-    renderHome();
+    // 【核心修复2】ESC 键监听
+    // 只负责关闭弹窗，绝对不触发 goBack，防止误关页面
+    document.addEventListener('keydown', function(event) {
+        if (event.key === "Escape") {
+            if (modal.style.display === 'flex') {
+                closeModal();
+            }
+            // 如果是视频全屏，浏览器会自动处理，我们不需要做任何事，这样就不会导致网页关闭了
+        }
+    });
 
 </script>
 
