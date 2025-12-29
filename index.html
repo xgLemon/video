@@ -11,31 +11,31 @@
         .video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; padding: 20px; max-width: 1400px; margin: 0 auto; }
         .video-card { background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); position: relative; }
         .video-wrapper { width: 100%; aspect-ratio: 16/9; background: #000; position: relative; }
-        /* 视频遮罩：防右键下载 */
+        /* 视频画面遮罩：防止右键点击视频保存 */
         .video-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 85%; z-index: 5; background: rgba(0,0,0,0); }
         video { width: 100%; height: 100%; display: block; }
         .info { padding: 12px; border-top: 1px solid #eee; }
         .info h3 { margin: 0; font-size: 0.95rem; color: #2c3e50; line-height: 1.4; }
+        @media (max-width: 600px) { .video-grid { grid-template-columns: 1fr; padding: 10px; } }
     </style>
 </head>
 <body oncontextmenu="return false">
 
 <div class="sticky-header">
     <h2 style="margin:0;">《汽车构造》教学视频库</h2>
-    <input type="text" class="search-box" id="searchInput" placeholder="🔍 输入序号或名称搜索...">
-    <div style="font-size:0.8em; color:#999; margin-top:8px;">存储：Cloudflare R2 | 流量费用：0元</div>
+    <input type="text" class="search-box" id="searchInput" placeholder="🔍 输入序号或名称快速搜索...">
+    <div style="font-size:0.8em; color:#999; margin-top:8px;">托管节点：Cloudflare R2 | 流量费用：0 元</div>
 </div>
 
 <div class="video-grid" id="videoGrid"></div>
 
 <script>
-    // 【请在此处填入你开启 R2.dev 后得到的链接】
-    // 注意：末尾要带上目录名 《汽车构造》/
-    const r2Base = "https://pub-eaa4beed94e0403684ba250e2f6cd2d9.r2.dev/"; 
+    // 您的 R2 公开访问地址 + 目录名
+    const r2Base = "https://pub-5c5bb9aa72d54e53abacca6b652c98e4.r2.dev/" + encodeURIComponent("《汽车构造》") + "/"; 
 
-    // 这里是你的 72 个视频文件名
+    // 完整的 72 个视频文件名列表
     const videoFiles = [
-        "01-汽车分类与结构认知.mp4", "02-汽车识别代码和技术参数认知.mp4", "3.发动机的总体结构和工作原理认知.mp4",
+        "1-汽车分类与结构认知.mp4", "2-汽车识别代码和技术参数认知.mp4", "3.发动机的总体结构和工作原理认知.mp4",
         "4.机体组及活塞连杆组认知.mp4", "5.机体组与活塞连杆组拆卸检修.mp4", "6.曲轴飞轮组认知.mp4",
         "7.曲轴飞轮组拆装检修.mp4", "8.配气机构的主要部件认知.mp4", "9.配气机构拆装检修.mp4",
         "10.燃油供给系统认知.mp4", "11.燃油供给系统拆装检修.mp4", "12.润滑系主要部件认知.mp4",
@@ -64,7 +64,7 @@
     const grid = document.getElementById('videoGrid');
     const searchInput = document.getElementById('searchInput');
 
-    // 自动排序逻辑：提取文件名开头的数字
+    // 自动按序号排序
     const sortedData = videoFiles.map(name => {
         const match = name.match(/^(\d+)/);
         return { name, order: match ? parseInt(match[1]) : 999 };
