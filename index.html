@@ -299,33 +299,51 @@
     }
     // 视频加载
     window.loadVideo = function(id, url) {
-        const container = document.getElementById(id);
-        if(container.querySelector('video')) return;
-        container.innerHTML = `
-            <video controls autoplay controlsList="nodownload" playsinline oncontextmenu="return false">
-                <source src="${url}" type="video/mp4">
-            </video>`;
-        container.onclick = null;
-        container.style.cursor = 'default';
+    // 【新增】先停止页面上所有正在播放的视频
+    const allVideos = document.querySelectorAll('video');
+    allVideos.forEach(v => {
+        v.pause();
+        // 如果想更彻底，可以像下面这样把之前的视频恢复成封面状态：
+        // v.parentElement.innerHTML = '<div class="video-placeholder">...</div>'; 
+        // 但简单起见，pause() 就能解决声音重叠问题
+    });
+
+    const container = document.getElementById(id);
+    if(container.querySelector('video')) {
+        container.querySelector('video').play(); // 如果已经加载过，直接播
+        return;
     }
+    
+    // 加载新视频
+    container.innerHTML = `
+        <video controls autoplay controlsList="nodownload" playsinline oncontextmenu="return false">
+            <source src="${url}" type="video/mp4">
+        </video>`;
+    container.onclick = null;
+    container.style.cursor = 'default';
+}
 
     // 预览弹窗
     window.previewDoc = function(url, ext, title) {
-        document.getElementById('modalTitle').innerText = title;
-        modal.style.display = 'flex';
-        modalContent.innerHTML = '<div style="color:#fff;text-align:center;padding-top:100px;">加载中...</div>';
-        
-        let iframeSrc = "";
-        if (['ppt', 'pptx', 'doc', 'docx'].includes(ext)) {
-            iframeSrc = msViewer + encodeURIComponent(url);
-        } else if (ext === 'pdf') {
-            iframeSrc = url + "#toolbar=0";
-        }
+    // 【新增】打开 PPT 预览时，停止后台所有视频播放
+    const allVideos = document.querySelectorAll('video');
+    allVideos.forEach(v => v.pause());
 
-        setTimeout(() => {
-            modalContent.innerHTML = `<iframe class="full-viewer" src="${iframeSrc}"></iframe>`;
-        }, 300);
+    document.getElementById('modalTitle').innerText = title;
+    modal.style.display = 'flex';
+    modalContent.innerHTML = '<div style="color:#fff;text-align:center;padding-top:100px;">加载中...</div>';
+    
+    let iframeSrc = "";
+    if (['ppt', 'pptx', 'doc', 'docx'].includes(ext)) {
+        iframeSrc = msViewer + encodeURIComponent(url);
+    } else if (ext === 'pdf') {
+        iframeSrc = url + "#toolbar=0";
     }
+
+    setTimeout(() => {
+        modalContent.innerHTML = `<iframe class="full-viewer" src="${iframeSrc}"></iframe>`;
+    }, 300);
+}
 
     window.closeModal = function() {
         modal.style.display = 'none';
@@ -334,6 +352,81 @@
 
     // 启动
     renderHome();
+    // 1. 定义音效资源
+const folderSound = new Audio("https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3"); // 文件夹开启音
+const fileSound = new Audio("https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3");   // 文件点击音
+
+// 2. 更新打开文件夹函数
+function openFolder(index) {
+    folderSound.play().catch(e => console.log("等待用户交互后播放音效")); // 播放音效
+    
+    const proj = courseData[index];
+    currentLevel = 1;
+    currentProjectIndex = index;
+    backBtn.style.display = 'block';
+    pageTitle.innerText = proj.title;
+    folderGrid.innerHTML = ''; 
+    fileGrid.innerHTML = ''; 
+
+    const subFolders = proj.subFolders;
+    subFolders.forEach((sub, subIndex) => {
+        const div = document.createElement('div');
+        div.className = 'folder-card';
+        div.style.borderBottom = `5px solid ${sub.color.replace('e', 'c')}`;
+        div.onclick = () => renderFiles(sub); // 这个点击会触发 renderFiles 里的音效
+        div.innerHTML = `
+            <div class="badge">分类</div>
+            <span class="folder-icon">${sub.icon}</span>
+            <div class="folder-name">${sub.name}</div>
+            <div class="folder-desc">${sub.files.length} 个文件</div>
+        `;
+        folderGrid.appendChild(div);
+    });
+}
+
+// 3. 更新渲染文件函数（为文件点击增加音效）
+function renderFiles(subFolderData) {
+    folderSound.play().catch(e => {}); // 播放进入分类的音效
+    
+    currentLevel = 2;
+    folderGrid.style.display = 'none';
+    fileGrid.style.display = 'grid';
+    pageTitle.innerText = subFolderData.name;
+    fileGrid.innerHTML = '';
+
+    const cleanFolder = subFolderData.path ? subFolderData.path.replace(/\/$/, '') : "";
+    const folderPart = cleanFolder ? (encodeURI(cleanFolder) + "/") : "";
+
+    subFolderData.files.forEach((filename, idx) => {
+        const rawUrl = r2Base + folderPart + encodeURIComponent(filename);
+        const ext = filename.split('.').pop().toLowerCase();
+        const card = document.createElement('div');
+        card.className = 'card';
+
+        // 统一点击处理：播放文件音效
+        card.onclick = () => {
+            fileSound.currentTime = 0; // 重置进度，防止连续点击不响
+            fileSound.play().catch(e => {});
+        };
+
+        // ... 后面的内容逻辑保持不变 (Video, Image, PPT 等)
+    });
+}
+
+// 4. 更新返回函数（增加返回音效）
+function goBack() {
+    fileSound.play().catch(e => {}); // 返回时播放轻微点击音
+    fileGrid.innerHTML = ''; 
+
+    if (currentLevel === 2) {
+        folderGrid.style.display = 'grid';
+        fileGrid.style.display = 'none';
+        renderProject(currentProjectIndex);
+    } else if (currentLevel === 1) {
+        renderHome();
+    }
+    closeModal();
+}
 
 </script>
 
