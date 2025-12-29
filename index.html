@@ -278,22 +278,25 @@
             fileGrid.appendChild(card);
         });
         window.scrollTo(0, 0);
-    }
+}
 
-    // 返回逻辑
+    // 【核心修复】返回逻辑
     function goBack() {
+        // 1. 强制清理：一旦点返回，直接清空 fileGrid 的内容
+        // 这样所有的 <video> 标签都会被销毁，播放立即停止
+        fileGrid.innerHTML = ''; 
+
         if (currentLevel === 2) {
-            // 从文件列表返回到项目二级页
+            // 从文件页返回到分类页
             folderGrid.style.display = 'grid';
             fileGrid.style.display = 'none';
             renderProject(currentProjectIndex);
         } else if (currentLevel === 1) {
-            // 从项目二级页返回首页
+            // 从分类页返回首页
             renderHome();
         }
         closeModal();
     }
-
     // 视频加载
     window.loadVideo = function(id, url) {
         const container = document.getElementById(id);
