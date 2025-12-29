@@ -3,39 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>凌泰教育教学视频库</title>
+    <title>凌泰教育教学资源库</title>
     <style>
-        body { font-family: -apple-system, sans-serif; background: #f4f7f9; margin: 0; padding: 0; color: #333; -webkit-user-select: none; user-select: none; }
-        .sticky-header { position: sticky; top: 0; background: #fff; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.1); padding: 15px; text-align: center; }
-        .search-box { width: 90%; max-width: 500px; padding: 12px; border: 2px solid #007aff; border-radius: 25px; outline: none; font-size: 16px; margin-top: 10px; }
-        .video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; padding: 20px; max-width: 1400px; margin: 0 auto; }
-        .video-card { background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); position: relative; }
-        .video-wrapper { width: 100%; aspect-ratio: 16/9; background: #000; position: relative; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background: #f4f7f9; margin: 0; padding: 0; color: #333; -webkit-user-select: none; user-select: none; }
         
-        /* 删除了 .video-overlay 遮罩层，不再阻挡您的鼠标点击 */
+        /* 顶部导航栏 */
+        .sticky-header { position: sticky; top: 0; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.05); padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+        .site-title { font-size: 1.2rem; font-weight: bold; color: #333; margin: 0; }
+        .search-box { padding: 8px 15px; border: 1px solid #ddd; border-radius: 20px; outline: none; font-size: 14px; width: 200px; transition: all 0.3s; }
+        .search-box:focus { border-color: #007aff; width: 300px; }
+
+        /* 板块标题风格 */
+        .project-section { max-width: 1400px; margin: 40px auto 10px; padding: 0 20px; display: flex; align-items: center; }
+        .project-title { font-size: 1.6rem; font-weight: 800; color: #2c3e50; margin-right: 15px; }
+        .project-badge { background: #007aff; color: #fff; font-size: 0.8rem; padding: 3px 8px; border-radius: 4px; font-weight: normal; }
+        .project-line { flex-grow: 1; height: 1px; background: #e0e0e0; margin-left: 15px; }
+
+        /* 资源网格布局 */
+        .resource-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; padding: 10px 20px 40px; max-width: 1400px; margin: 0 auto; }
         
-        video { width: 100%; height: 100%; display: block; outline: none; }
-        .info { padding: 12px; border-top: 1px solid #eee; }
-        .info h3 { margin: 0; font-size: 0.95rem; color: #2c3e50; line-height: 1.4; }
-        @media (max-width: 600px) { .video-grid { grid-template-columns: 1fr; padding: 10px; } }
+        /* 卡片样式 */
+        .card { background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.04); transition: transform 0.2s; border: 1px solid #f0f0f0; }
+        .card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        
+        /* 媒体容器 */
+        .media-wrapper { width: 100%; aspect-ratio: 16/9; background: #f8f9fa; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+        
+        /* 安全遮罩层 (核心防盗) */
+        .security-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; background: rgba(0,0,0,0); }
+        .video-mask { height: 85%; } /* 视频只遮上面，留出控制条 */
+
+        /* 各类媒体样式 */
+        video { width: 100%; height: 100%; object-fit: contain; background: #000; display: block; }
+        /* 图片禁止鼠标事件和拖拽 */
+        .safe-img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+        iframe.doc-viewer { width: 100%; height: 100%; border: none; }
+
+        /* 底部信息栏 */
+        .info { padding: 12px; border-top: 1px solid #eee; position: relative; z-index: 20; background: #fff; }
+        .info h3 { margin: 0; font-size: 0.9rem; color: #444; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        /* 文件类型标签 */
+        .file-tag { font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; color: #fff; margin-right: 5px; vertical-align: middle; display: inline-block; }
     </style>
 </head>
 <body oncontextmenu="return false">
 
 <div class="sticky-header">
-    <h2 style="margin:0;">《汽车构造》教学视频库</h2>
-    <input type="text" class="search-box" id="searchInput" placeholder="🔍 输入序号或名称搜索...">
-    <div style="font-size:0.8em; color:#999; margin-top:8px;">状态：R2 加速中 | 交互优化版</div>
+    <h1 class="site-title">🏫 汽车构造课程资源库</h1>
+    <input type="text" class="search-box" id="searchInput" placeholder="🔍 搜索视频、课件或图片...">
 </div>
 
-<div class="video-grid" id="videoGrid"></div>
+<div id="contentArea"></div>
 
 <script>
-    // R2 根目录链接
-    const r2Base = "https://pub-5c5bb9aa72d54e53abacca6b652c98e4.r2.dev/"; 
+    // R2 根链接
+    const r2Base = "https://pub-5c5bb9aa72d54e53abacca6b652c98e4.r2.dev/";
+    
+    // 微软 Office 在线预览前缀
+    const msViewer = "https://view.officeapps.live.com/op/embed.aspx?src=";
 
-    // 72个视频文件名
-    const videoFiles = [
+    // ==========================================
+    // 【核心配置区】已为您添加了图片板块
+    // ==========================================
+    const projects = [
+        {
+            projectName: "第一部分：教学视频", 
+            folderName: "《汽车构造》/视频",   
+            items: [
         "01-汽车分类与结构认知.mp4", "02-汽车识别代码和技术参数认知.mp4", "3.发动机的总体结构和工作原理认知.mp4",
         "4.机体组及活塞连杆组认知.mp4", "5.机体组与活塞连杆组拆卸检修.mp4", "6.曲轴飞轮组认知.mp4",
         "7.曲轴飞轮组拆装检修.mp4", "8.配气机构的主要部件认知.mp4", "9.配气机构拆装检修.mp4",
@@ -60,41 +94,128 @@
         "65.新能源汽车认知.mp4", "66.新能源汽车动力电池系统认知.mp4", "67.新能源汽车高压安全维护.mp4",
         "68.新能源汽车动力电池系统拆装检修.mp4", "69.新能源汽车驱动电机系统认知.mp4", "70.新能源汽车驱动电机系统拆装检修.mp4",
         "71.新能源汽车高压配电系统认知.mp4", "72.新能源汽车高压配电系统拆装检修.mp4"
+            ]
+        },
+        {
+            projectName: "第二部分：思政课件 (PPT)", 
+            folderName: "《汽车构造》/PPT",
+            items: [
+                "思政01-国家情怀.pptx",
+                "思政02-大国自信.pptx",
+                "思政03-工匠精神.pptx",
+                "思政04-创新精神.pptx",
+                "思政05-科技精神.pptx"
+            ]
+        },
+        {
+            // 【新增】第三部分：教学图片
+            projectName: "第三部分：教学图片素材",
+            folderName: "《汽车构造》/图片", // 对应您截图里的路径
+            items: [
+                "1.jpg", "2.jpg", "3.jpg", "4.jpg", "5.jpg",
+                "6.jpg", "7.jpg", "8.jpg", "9.jpg", "10.jpg"
+            ]
+        }
     ];
 
-    const grid = document.getElementById('videoGrid');
+    const contentArea = document.getElementById('contentArea');
     const searchInput = document.getElementById('searchInput');
 
-    const sortedData = videoFiles.map(name => {
-        const match = name.match(/^(\d+)/);
-        return { name, order: match ? parseInt(match[1]) : 999 };
-    }).sort((a, b) => a.order - b.order);
+    // 辅助函数：判断文件类型
+    function getFileType(filename) {
+        const ext = filename.split('.').pop().toLowerCase();
+        if (['mp4', 'mov', 'webm'].includes(ext)) return 'video';
+        if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) return 'image';
+        if (['ppt', 'pptx', 'doc', 'docx', 'xlsx'].includes(ext)) return 'office';
+        if (['pdf'].includes(ext)) return 'pdf';
+        return 'unknown';
+    }
 
+    // 核心渲染函数
     function render(filter = '') {
-        grid.innerHTML = '';
-        sortedData.forEach(item => {
-            if (item.name.includes(filter)) {
-                // R2 链接处理
-                const videoSrc = r2Base + encodeURIComponent(item.name);
-                
-                const card = document.createElement('div');
-                card.className = 'video-card';
-                card.innerHTML = `
-                    <div class="video-wrapper">
-                        <video 
-                            controls 
-                            controlsList="nodownload" 
-                            playsinline 
-                            preload="none"
-                            oncontextmenu="return false">
-                            <source src="${videoSrc}" type="video/mp4">
-                        </video>
-                    </div>
-                    <div class="info"><h3>${item.name.replace('.mp4','')}</h3></div>
+        contentArea.innerHTML = '';
+        
+        projects.forEach(project => {
+            const isTitleMatch = project.projectName.toLowerCase().includes(filter.toLowerCase());
+            const filteredItems = project.items.filter(f => f.toLowerCase().includes(filter.toLowerCase()) || isTitleMatch);
+            const itemsToShow = isTitleMatch ? project.items : filteredItems;
+
+            if (itemsToShow.length > 0) {
+                // 1. 渲染板块标题
+                const section = document.createElement('div');
+                section.className = 'project-section';
+                section.innerHTML = `
+                    <div class="project-title">${project.projectName}</div>
+                    <span class="project-badge">${itemsToShow.length} 个资源</span>
+                    <div class="project-line"></div>
                 `;
-                grid.appendChild(card);
+                contentArea.appendChild(section);
+
+                // 2. 渲染资源网格
+                const grid = document.createElement('div');
+                grid.className = 'resource-grid';
+                
+                itemsToShow.forEach(filename => {
+                    // 处理多级路径和中文编码
+                    const cleanFolder = project.folderName ? project.folderName.replace(/\/$/, '') : "";
+                    const folderPart = cleanFolder ? (encodeURI(cleanFolder) + "/") : "";
+                    const rawUrl = r2Base + folderPart + encodeURIComponent(filename);
+                    
+                    const type = getFileType(filename);
+                    let contentHtml = '';
+                    let tagHtml = '';
+
+                    if (type === 'video') {
+                        tagHtml = '<span class="file-tag" style="background:#007aff;">视频</span>';
+                        contentHtml = `
+                            <div class="media-wrapper" style="background:#000;">
+                                <video controls controlsList="nodownload" playsinline preload="none" oncontextmenu="return false">
+                                    <source src="${rawUrl}" type="video/mp4">
+                                </video>
+                                <div class="security-overlay video-mask"></div>
+                            </div>`;
+                    } 
+                    else if (type === 'image') {
+                        tagHtml = '<span class="file-tag" style="background:#4ecdc4;">图片</span>';
+                        // 图片保护：禁止拖拽 + 全屏透明遮罩禁止右键
+                        contentHtml = `
+                            <div class="media-wrapper">
+                                <img src="${rawUrl}" class="safe-img" ondragstart="return false" alt="${filename}">
+                                <div class="security-overlay"></div>
+                            </div>`;
+                    } 
+                    else if (type === 'office') {
+                        tagHtml = '<span class="file-tag" style="background:#ff6b6b;">PPT</span>';
+                        // PPT在线预览
+                        contentHtml = `
+                            <div class="media-wrapper">
+                                <iframe class="doc-viewer" src="${msViewer + encodeURIComponent(rawUrl)}&wdAr=1.77"></iframe>
+                            </div>`;
+                    }
+                    else if (type === 'pdf') {
+                        tagHtml = '<span class="file-tag" style="background:#ff9f43;">PDF</span>';
+                        contentHtml = `
+                            <div class="media-wrapper">
+                                <iframe class="doc-viewer" src="${rawUrl}#toolbar=0"></iframe>
+                            </div>`;
+                    }
+
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.innerHTML = `
+                        ${contentHtml}
+                        <div class="info"><h3>${tagHtml}${filename}</h3></div>
+                    `;
+                    grid.appendChild(card);
+                });
+                
+                contentArea.appendChild(grid);
             }
         });
+
+        if (contentArea.innerHTML === '') {
+            contentArea.innerHTML = '<div style="text-align:center;color:#999;margin-top:50px;">未找到相关内容</div>';
+        }
     }
 
     searchInput.addEventListener('input', (e) => render(e.target.value));
