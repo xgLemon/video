@@ -3,53 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>教学资源库</title>
+    <title>凌泰教育教学资源库</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #f4f7f9; margin: 0; padding: 0; color: #333; -webkit-user-select: none; user-select: none; overflow-x: hidden; }
         
         /* 顶部导航 */
         .header { background: #fff; padding: 15px 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; }
-        .back-btn { display: none; padding: 8px 16px; background: #f0f0f0; border: none; border-radius: 20px; cursor: pointer; font-size: 14px; color: #333; font-weight: bold; }
+        .back-btn { display: none; padding: 8px 16px; background: #f0f0f0; border: none; border-radius: 20px; cursor: pointer; font-size: 14px; color: #333; font-weight: bold; margin-right: 15px; }
         .back-btn:hover { background: #e0e0e0; }
         .site-title { font-size: 1.2rem; font-weight: 800; color: #2c3e50; margin: 0; }
         
         .container { max-width: 1200px; margin: 20px auto; padding: 0 20px; }
 
-        /* 📁 文件夹视图 */
+        /* 📁 文件夹网格 (用于一级和二级目录) */
         .folder-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; padding-top: 20px; }
-        .folder-card { background: #fff; border-radius: 16px; padding: 30px; text-align: center; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border: 2px solid transparent; }
+        .folder-card { background: #fff; border-radius: 16px; padding: 30px; text-align: center; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border: 2px solid transparent; position: relative; }
         .folder-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.08); border-color: #007aff; }
         .folder-icon { font-size: 4rem; margin-bottom: 15px; display: block; }
         .folder-name { font-size: 1.2rem; font-weight: bold; color: #333; }
-        .folder-count { font-size: 0.9rem; color: #999; margin-top: 5px; }
+        .folder-desc { font-size: 0.9rem; color: #999; margin-top: 5px; }
+        
+        /* 标签：区分项目和分类 */
+        .badge { position: absolute; top: 15px; right: 15px; background: #f0f2f5; color: #666; font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; }
 
-        /* 📄 文件列表视图 */
+        /* 📄 文件列表视图 (三级页面) */
         .file-grid { display: none; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
         
         .card { background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05); transition: transform 0.2s; }
         .card:hover { transform: translateY(-3px); }
         
-        /* 核心媒体容器 */
+        /* 媒体容器 */
         .media-wrapper { width: 100%; aspect-ratio: 16/9; background: #000; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; cursor: pointer; }
         
-        /* ▶️ 视频假封面 (点击前) */
+        /* 视频占位符 */
         .video-placeholder { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #222; color: #fff; }
         .play-icon { font-size: 3rem; opacity: 0.9; transition: transform 0.2s; }
         .video-placeholder:hover .play-icon { transform: scale(1.1); color: #007aff; }
         
-        /* 真正的视频标签 (点击后生成) */
+        /* 真正的视频标签 */
         video { width: 100%; height: 100%; object-fit: contain; background: #000; outline: none; }
 
         /* 图片 & PPT 封面 */
         .safe-img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
         .ppt-cover { text-align: center; width: 100%; background: #f8f9fa; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .ppt-icon { font-size: 3rem; color: #ff6b6b; margin-bottom: 10px; }
-        .ppt-hint { color: #007aff; font-size: 0.9rem; font-weight: bold; }
 
         .info { padding: 12px; border-top: 1px solid #eee; background: #fff; }
         .info h3 { margin: 0; font-size: 0.9rem; color: #444; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
-        /* 🔍 全屏预览弹窗 */
+        /* 预览弹窗 */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000; flex-direction: column; }
         .modal-header { height: 50px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; background: #1a1a1a; color: #fff; }
         .close-modal { background: none; border: none; color: #fff; font-size: 28px; cursor: pointer; line-height: 1; }
@@ -64,15 +66,15 @@
 <body oncontextmenu="return false">
 
 <div class="header">
-    <div style="display:flex; align-items:center; gap:10px;">
-        <button class="back-btn" id="backBtn" onclick="goHome()">← 返回目录</button>
-        <h1 class="site-title" id="pageTitle">凌泰教育资源库首页</h1>
+    <div style="display:flex; align-items:center;">
+        <button class="back-btn" id="backBtn" onclick="goBack()">← 返回</button>
+        <h1 class="site-title" id="pageTitle">凌泰教育课程首页</h1>
     </div>
 </div>
 
 <div class="container">
-    <div id="folderView" class="folder-grid"></div>
-    <div id="fileView" class="file-grid"></div>
+    <div id="folderGrid" class="folder-grid"></div>
+    <div id="fileGrid" class="file-grid"></div>
 </div>
 
 <div id="previewModal" class="modal">
@@ -84,20 +86,25 @@
 </div>
 
 <script>
-    // R2 根链接
     const r2Base = "https://pub-5c5bb9aa72d54e53abacca6b652c98e4.r2.dev/";
-    // 微软 Office 在线预览 (只读模式)
     const msViewer = "https://view.officeapps.live.com/op/embed.aspx?src=";
 
-    // ================= 配置区 =================
-    const projects = [
+    // ================= 核心数据结构 (三级目录) =================
+    const courseData = [
         {
-            id: "video",
-            name: "教学视频 (72讲)",
-            icon: "🎬",
-            color: "#e3f2fd",
-            folderName: "《汽车构造》/视频",
-            items: [
+            // Level 1: 项目 (大的文件夹)
+            title: "《汽车构造》课程",
+            icon: "🚗",
+            desc: "包含视频、课件与图库",
+            subFolders: [
+                {
+                    // Level 2: 分类
+                    name: "教学视频",
+                    icon: "🎬",
+                    color: "#e3f2fd",
+                    path: "《汽车构造》/视频", // R2 路径
+                    files: [
+                        // Level 3: 具体文件
         "1-汽车分类与结构认知.mp4", "2-汽车识别代码和技术参数认知.mp4", "3.发动机的总体结构和工作原理认知.mp4",
         "4.机体组及活塞连杆组认知.mp4", "5.机体组与活塞连杆组拆卸检修.mp4", "6.曲轴飞轮组认知.mp4",
         "7.曲轴飞轮组拆装检修.mp4", "8.配气机构的主要部件认知.mp4", "9.配气机构拆装检修.mp4",
@@ -122,84 +129,107 @@
         "65.新能源汽车认知.mp4", "66.新能源汽车动力电池系统认知.mp4", "67.新能源汽车高压安全维护.mp4",
         "68.新能源汽车动力电池系统拆装检修.mp4", "69.新能源汽车驱动电机系统认知.mp4", "70.新能源汽车驱动电机系统拆装检修.mp4",
         "71.新能源汽车高压配电系统认知.mp4", "72.新能源汽车高压配电系统拆装检修.mp4"
+                    ]
+                },
+                {
+                    name: "思政课件 (PPT)",
+                    icon: "📊",
+                    color: "#ffebee",
+                    path: "《汽车构造》/PPT",
+                    files: [
+                        "思政01-国家情怀.pptx",
+                        "思政02-大国自信.pptx",
+                        "思政03-工匠精神.pptx",
+                        "思政04-创新精神.pptx",
+                        "思政05-科技精神.pptx"
+                    ]
+                },
+                {
+                    name: "教学图片素材",
+                    icon: "🖼️",
+                    color: "#e8f5e9",
+                    path: "《汽车构造》/图片",
+                    files: [
+                        "1.jpg", "2.jpg", "3.jpg", "4.jpg", "5.jpg",
+                        "6.jpg", "7.jpg", "8.jpg", "9.jpg", "10.jpg"
+                    ]
+                }
             ]
         },
-        {
-            id: "ppt",
-            name: "思政课件 (PPT)",
-            icon: "📊",
-            color: "#ffebee",
-            folderName: "《汽车构造》/PPT",
-            items: [
-                "思政01-国家情怀.pptx",
-                "思政02-大国自信.pptx",
-                "思政03-工匠精神.pptx",
-                "思政04-创新精神.pptx",
-                "思政05-科技精神.pptx"
-            ]
-        },
-        {
-            id: "image",
-            name: "教学图片素材",
-            icon: "🖼️",
-            color: "#e8f5e9",
-            folderName: "《汽车构造》/图片",
-            items: [
-                "1.jpg", "2.jpg", "3.jpg", "4.jpg", "5.jpg",
-                "6.jpg", "7.jpg", "8.jpg", "9.jpg", "10.jpg"
-            ]
-        }
+        // 如果有第二个大项目，可以复制上面的大括号继续添加...
     ];
 
-    // ================= 核心逻辑 =================
-    const folderView = document.getElementById('folderView');
-    const fileView = document.getElementById('fileView');
+    // ================= 逻辑控制 =================
+    const folderGrid = document.getElementById('folderGrid');
+    const fileGrid = document.getElementById('fileGrid');
     const backBtn = document.getElementById('backBtn');
     const pageTitle = document.getElementById('pageTitle');
     const modal = document.getElementById('previewModal');
     const modalContent = document.getElementById('modalContent');
 
-    function init() {
-        folderView.innerHTML = '';
-        projects.forEach((proj, index) => {
+    // 状态管理：0=首页, 1=二级分类页, 2=文件列表页
+    let currentLevel = 0;
+    let currentProjectIndex = 0;
+
+    // 1. 初始化：渲染首页 (Level 1)
+    function renderHome() {
+        currentLevel = 0;
+        folderGrid.style.display = 'grid';
+        fileGrid.style.display = 'none';
+        backBtn.style.display = 'none';
+        pageTitle.innerText = "凌泰教育课程资源首页";
+        folderGrid.innerHTML = '';
+
+        courseData.forEach((proj, index) => {
             const div = document.createElement('div');
             div.className = 'folder-card';
-            div.style.borderBottom = `5px solid ${proj.color.replace('e', 'c')}`;
-            div.onclick = () => openFolder(index);
+            div.onclick = () => renderProject(index);
             div.innerHTML = `
+                <div class="badge">项目</div>
                 <span class="folder-icon">${proj.icon}</span>
-                <div class="folder-name">${proj.name}</div>
-                <div class="folder-count">${proj.items.length} 个文件</div>
+                <div class="folder-name">${proj.title}</div>
+                <div class="folder-desc">${proj.desc}</div>
             `;
-            folderView.appendChild(div);
+            folderGrid.appendChild(div);
         });
     }
 
-    function openFolder(index) {
-        const proj = projects[index];
-        folderView.style.display = 'none';
-        fileView.style.display = 'grid';
+    // 2. 进入项目：渲染分类 (Level 2)
+    function renderProject(index) {
+        currentLevel = 1;
+        currentProjectIndex = index;
         backBtn.style.display = 'block';
-        pageTitle.innerText = proj.name;
-        renderFiles(proj);
-        window.scrollTo(0, 0);
+        pageTitle.innerText = courseData[index].title;
+        folderGrid.innerHTML = ''; // 清空上一级内容
+
+        const subFolders = courseData[index].subFolders;
+        subFolders.forEach((sub, subIndex) => {
+            const div = document.createElement('div');
+            div.className = 'folder-card';
+            div.style.borderBottom = `5px solid ${sub.color.replace('e', 'c')}`;
+            div.onclick = () => renderFiles(sub);
+            div.innerHTML = `
+                <div class="badge">分类</div>
+                <span class="folder-icon">${sub.icon}</span>
+                <div class="folder-name">${sub.name}</div>
+                <div class="folder-desc">${sub.files.length} 个文件</div>
+            `;
+            folderGrid.appendChild(div);
+        });
     }
 
-    function goHome() {
-        fileView.style.display = 'none';
-        folderView.style.display = 'grid';
-        backBtn.style.display = 'none';
-        pageTitle.innerText = "资源库首页";
-        fileView.innerHTML = ''; // 清空列表，释放内存
-        closeModal();
-    }
+    // 3. 进入文件列表 (Level 3)
+    function renderFiles(subFolderData) {
+        currentLevel = 2;
+        folderGrid.style.display = 'none';
+        fileGrid.style.display = 'grid';
+        pageTitle.innerText = subFolderData.name;
+        fileGrid.innerHTML = '';
 
-    function renderFiles(proj) {
-        fileView.innerHTML = '';
-        const cleanFolder = proj.folderName ? proj.folderName.replace(/\/$/, '') : "";
+        const cleanFolder = subFolderData.path ? subFolderData.path.replace(/\/$/, '') : "";
         const folderPart = cleanFolder ? (encodeURI(cleanFolder) + "/") : "";
 
-        proj.items.forEach((filename, idx) => {
+        subFolderData.files.forEach((filename, idx) => {
             const rawUrl = r2Base + folderPart + encodeURIComponent(filename);
             const ext = filename.split('.').pop().toLowerCase();
             const card = document.createElement('div');
@@ -207,36 +237,35 @@
 
             let contentHTML = '';
 
-            // --- 🎬 视频：封面占位模式 (Lazy Load) ---
-            // 只有点击播放按钮时，才真正插入 video 标签
+            // 视频：懒加载
             if (['mp4', 'mov'].includes(ext)) {
                 const uniqueId = `vid-${idx}`;
                 contentHTML = `
-                    <div class="media-wrapper" id="${uniqueId}" onclick="loadAndPlayVideo('${uniqueId}', '${rawUrl}')">
+                    <div class="media-wrapper" id="${uniqueId}" onclick="loadVideo('${uniqueId}', '${rawUrl}')">
                         <div class="video-placeholder">
                             <div class="play-icon">▶</div>
-                            <div style="font-size:0.8rem; margin-top:10px; color:#999;">点击加载视频</div>
+                            <div style="font-size:0.8rem; margin-top:10px; color:#999;">点击播放</div>
                         </div>
                     </div>`;
             } 
-            // --- 🖼️ 图片 ---
+            // 图片
             else if (['jpg', 'png', 'jpeg'].includes(ext)) {
                 contentHTML = `
                     <div class="media-wrapper">
                         <img src="${rawUrl}" class="safe-img" ondragstart="return false">
+                        <div class="security-overlay"></div>
                     </div>`;
             } 
-            // --- 📊 PPT/PDF：点击放大模式 ---
+            // PPT/PDF
             else {
                 const isPdf = ext === 'pdf';
                 const icon = isPdf ? '📄' : '📊';
                 const typeText = isPdf ? 'PDF文档' : 'PPT课件';
-                
                 contentHTML = `
                     <div class="media-wrapper" onclick="previewDoc('${rawUrl}', '${ext}', '${filename}')">
                         <div class="ppt-cover">
                             <div class="ppt-icon">${icon}</div>
-                            <div class="ppt-hint">点击全屏查看</div>
+                            <div style="color:#007aff;font-size:0.9rem;font-weight:bold;">点击全屏</div>
                             <div style="font-size:0.8em;color:#999;margin-top:5px;">${typeText}</div>
                         </div>
                     </div>`;
@@ -246,35 +275,44 @@
                 ${contentHTML}
                 <div class="info"><h3>${filename}</h3></div>
             `;
-            fileView.appendChild(card);
+            fileGrid.appendChild(card);
         });
+        window.scrollTo(0, 0);
     }
 
-    // --- 视频按需加载逻辑 ---
-    window.loadAndPlayVideo = function(containerId, url) {
-        const container = document.getElementById(containerId);
-        // 防止重复点击
-        if(container.querySelector('video')) return;
+    // 返回逻辑
+    function goBack() {
+        if (currentLevel === 2) {
+            // 从文件列表返回到项目二级页
+            folderGrid.style.display = 'grid';
+            fileGrid.style.display = 'none';
+            renderProject(currentProjectIndex);
+        } else if (currentLevel === 1) {
+            // 从项目二级页返回首页
+            renderHome();
+        }
+        closeModal();
+    }
 
-        // 动态创建 video 标签，实现真正的"点击时才加载"
+    // 视频加载
+    window.loadVideo = function(id, url) {
+        const container = document.getElementById(id);
+        if(container.querySelector('video')) return;
         container.innerHTML = `
             <video controls autoplay controlsList="nodownload" playsinline oncontextmenu="return false">
                 <source src="${url}" type="video/mp4">
-            </video>
-        `;
-        // 去掉点击事件，防止再次触发
+            </video>`;
         container.onclick = null;
         container.style.cursor = 'default';
     }
 
-    // --- 全屏预览逻辑 ---
+    // 预览弹窗
     window.previewDoc = function(url, ext, title) {
         document.getElementById('modalTitle').innerText = title;
         modal.style.display = 'flex';
-        modalContent.innerHTML = '<div style="color:#fff;text-align:center;padding-top:100px;">正在建立安全连接...</div>';
-
+        modalContent.innerHTML = '<div style="color:#fff;text-align:center;padding-top:100px;">加载中...</div>';
+        
         let iframeSrc = "";
-        // 微软接口自带防下载属性，且只读
         if (['ppt', 'pptx', 'doc', 'docx'].includes(ext)) {
             iframeSrc = msViewer + encodeURIComponent(url);
         } else if (ext === 'pdf') {
@@ -291,7 +329,9 @@
         modalContent.innerHTML = '';
     }
 
-    init();
+    // 启动
+    renderHome();
+
 </script>
 
 </body>
